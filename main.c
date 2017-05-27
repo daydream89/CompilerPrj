@@ -10,6 +10,7 @@
 #include "util.h"
 #include "scan.h"
 #include "cminus.tab.h"
+#include "createSymTab.h"
 
 /* parse.h inside */
 TreeNode* parse(void);
@@ -22,9 +23,10 @@ FILE * listing;	//Output Stream
 /* allocate and set racing flags */
 int EchoSource = TRUE;
 int TraceScan = FALSE;
-int TraceParse = TRUE;
+int TraceParse = FALSE;
 int TraceAnalyse = TRUE;
 int TraceCode = TRUE;
+int CreateSymTab = TRUE;
 
 int Error = FALSE;	//프로그램 진행 중 error가 발생할 경우 true로 설정
 
@@ -53,6 +55,13 @@ int main (int argc, char* argv[]){
 	
 	syntaxTree = parse();
 	if(TraceParse){
+		fprintf(listing,"\nStnyax tree:\n");
+		printTree(syntaxTree);
+	}
+
+	if(CreateSymTab)
+	{
+		syntaxTree = CreateTempSymbolTable();
 		fprintf(listing,"\nStnyax tree:\n");
 		printTree(syntaxTree);
 	}

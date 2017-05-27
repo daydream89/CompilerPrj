@@ -75,7 +75,8 @@ typedef struct treeNode{
 		int val;
 		char* name; } attr;
 	ExpType type; /* for type checking of exps */
-} TreeNode;
+	struct treeNode *typeDecNode;	/* for pointing variable type declaration node */
+}TreeNode;
 
 /********************************************/
 /*******         Flags for tracing      *****/
