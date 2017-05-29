@@ -146,6 +146,12 @@ void printTree( TreeNode * tree ){
 		printSpaces();
 		if(tree->nodekind == StmtK){
 			switch(tree->kind.stmt){
+				case ParaDecK:
+					fprintf(listing,"Parameter Declare\n");
+					break;
+				case ParaArrDecK:
+					fprintf(listing,"Parameter Array Declare\n");
+					break;
 				case VarDecK:
 					fprintf(listing,"Variable Declare\n");
 					break;

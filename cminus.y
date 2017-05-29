@@ -112,12 +112,12 @@ param_list        : param_list COMMA param
                   | param { $$ = $1; }
                   ;
 param             : type_specifier dec_var
-                      { $$ = newStmtNode(VarDecK);
+                      { $$ = newStmtNode(ParaDecK);
                         $$->child[0] = $1;
                         $$->child[1] = $2;
                       }
                   | type_specifier dec_var LBRACK RBRACK
-                      { $$ = newStmtNode(ArrDecK);
+                      { $$ = newStmtNode(ParaArrDecK);
                         $$->child[0] = $1;
                         $$->child[1] = $2;
                       }
