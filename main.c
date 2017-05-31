@@ -9,6 +9,7 @@
 //#include "lex.yy.c"
 #include "util.h"
 #include "scan.h"
+#include "buildSymtab.h"
 #include "cminus.tab.h"
 #include "createSymTab.h"
 
@@ -26,7 +27,7 @@ int TraceScan = FALSE;
 int TraceParse = FALSE;
 int TraceAnalyse = TRUE;
 int TraceCode = TRUE;
-int CreateSymTab = TRUE;
+int CreateSymTab = FALSE;
 
 int Error = FALSE;	//프로그램 진행 중 error가 발생할 경우 true로 설정
 
@@ -65,7 +66,10 @@ int main (int argc, char* argv[]){
 		fprintf(listing,"\nStnyax tree:\n");
 		printTree(syntaxTree);
 	}
-	
+
+	fprintf(listing, "\nBuilding Symbol Table...\n");
+	buildSymtab_pass1(syntaxTree);		// pass1
+
 	return 0;
 }
 

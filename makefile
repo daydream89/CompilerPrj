@@ -1,7 +1,7 @@
 all : main
 
-main : cminus.tab.o lex.yy.o main.o util.o
-	gcc -o 20121590 cminus.tab.o lex.yy.o main.o util.o -ly -lfl
+main : cminus.tab.o lex.yy.o main.o util.o buildSymtab.o symtab.o
+	gcc -o 20121590 cminus.tab.o lex.yy.o main.o util.o buildSymtab.o symtab.o -ly -lfl
 
 cminus.tab.c cminus.tab.h cminus.output: cminus.y
 	bison -d -v cminus.y
@@ -15,6 +15,11 @@ main.o : main.c
 util.o: util.c
 	gcc -c util.c -Wall
 
+buildSymtab.o: buildSymtab.c
+	gcc -c buildSymtab.c -Wall
+
+symtab.o: symtab.c
+	gcc -c symtab.c -Wall
 
 lex.yy.o: cminus.tab.c cminus.tab.h lex.yy.c
 	gcc -c cminus.tab.c lex.yy.c -ly -ll
