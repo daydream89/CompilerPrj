@@ -44,7 +44,6 @@ typedef struct DeclarationList
 	char *name;
 	StmtKind type;
 	TreeNode *node;
-	unsigned int isValid;
 	struct DeclarationList *next;
 }DeclarationList;
 
@@ -116,10 +115,13 @@ void st_insert(char *name, int lineno, int loc)
 			LineList t = l->lines;
 			while(t->next != NULL)
 				t = t->next;
-
-			t->next = (LineList)malloc(sizeof(struct LineListRec));
-			t->next->lineno = lineno;
-			t->next->next = NULL;
+			
+			if(t->lineno != lineno)
+			{
+				t->next = (LineList)malloc(sizeof(struct LineListRec));
+				t->next->lineno = lineno;
+				t->next->next = NULL;
+			}
 
 			return;
 		}
@@ -177,7 +179,7 @@ TreeNode *findDeclaration(char *name)
 	DeclarationList *list = gs_decList.next;
 	while(list != NULL)
 	{
-		if(strcmp(name, list->name) == 0 && (list->isValid == TRUE))
+		if(strcmp(name, list->name) == 0)
 			return list->node;
 		else
 			list = list->next;
@@ -192,33 +194,13 @@ TreeNode *findLastFuncDec()
 	DeclarationList *list = gs_decList.next;
 	while(list != NULL)
 	{
-		if((list->type == FunDecK) && (list->isValid == TRUE))
+		if((list->type == FunDecK))
 			decNode = list->node;
 
 		list = list->next;
 	}
 
 	return decNode;
-}
-
-void removeInvalidDec()
-{
-	DeclarationList *lastFuncDec = NULL;
-	DeclarationList *list = gs_decList.next;
-	while(list != NULL)
-	{
-		if((list->type == CompoundK) && (list->isValid == TRUE))
-			lastFuncDec = list;
-
-		list = list->next;
-	}
-
-	list = lastFuncDec;
-	while(list != NULL)
-	{
-		list->isValid = FALSE;
-		list = list->next;
-	}
 }
 
 // VarDecK와 FunDecK node를 받아서 gs_decList에 저장한다.
@@ -248,7 +230,6 @@ void insertDeclarationList(TreeNode *node, StmtKind type)
 		decNode->name = copyString(node->child[1]->attr.name);
 		decNode->type = type;
 		decNode->node = node;
-		decNode->isValid = TRUE;
 
 		DeclarationList *list = &gs_decList;
 		while(list->next != NULL)

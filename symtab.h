@@ -13,7 +13,6 @@ TreeNode *findLastFuncDec();
 
 void insertDeclarationList(TreeNode *node, StmtKind type);
 
-void removeInvalidDec();
 void removeAllDeclarationList();
 
 void printSymTab(FILE *listing);
