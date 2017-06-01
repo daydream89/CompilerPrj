@@ -45,8 +45,12 @@ static void insertNode(TreeNode *t)
 				// TreeNode를 저장해두고 st_insert할 때 typeDecNode에 넣어준다.
 				case FunDecK:
 				{
-					removeInvalidDec();
 					insertDeclarationList(t, FunDecK);
+				}break;
+
+				// {} 괄호 내부의 statement.
+				case CompoundK:
+				{
 				}break;
 
 				// return 문. 함수와 연결.
@@ -76,6 +80,10 @@ static void insertNode(TreeNode *t)
 					TreeNode *decNode = findDeclaration(t->attr.name);
 					if(decNode != NULL)
 						t->typeDecNode = decNode;
+					else
+					{
+						//fprintf
+					}
 				}break;
 
 				default:
@@ -88,25 +96,56 @@ static void insertNode(TreeNode *t)
 	}
 }
 
+static TreeNode *paramNode = NULL;
+
 static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(TreeNode*))
 {
 	int i;
 
 	if(t != NULL)
 	{
+		unsigned int isCompound = FALSE;
+		if(t->nodekind == StmtK && t->kind.stmt == CompoundK)
+		{
+			st_create();
+			isCompound = TRUE;
+
+			if(paramNode != NULL)
+			{
+				traverse(paramNode, preProc, postProc);
+				paramNode = NULL;
+			}
+		}
+
+		if(paramNode == NULL)
+		{
+			if(t->nodekind == StmtK && (t->kind.stmt == ParaDecK || t->kind.stmt == ParaArrDecK))
+			{
+				paramNode = t;
+				return;
+			}
+		}
+
 		preProc(t);
 
 		for(i=0; i<MAXCHILDREN; ++i)
 			traverse(t->child[i], preProc, postProc);
 
 		postProc(t);
+		
+		if(isCompound == TRUE)
+		{
+			printSymTab(listing);
+			st_remove();
+		}
 
-		traverse(t->child[i], preProc, postProc);
+		traverse(t->sibling, preProc, postProc);
 	}
 }
 
 void buildSymtab_pass1(TreeNode *syntaxTree)
 {
+	st_create();
 	traverse(syntaxTree, insertNode, nullProc);
 	printSymTab(listing);
 

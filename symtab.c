@@ -33,6 +33,12 @@ typedef struct BucketListRec
 	struct BucketListRec *next;
 }* BucketList;
 
+typedef struct ExpandHash
+{
+	struct ExpandHash *next;
+	BucketList *hash;
+}ExpandHash;
+
 typedef struct DeclarationList
 {
 	char *name;
@@ -42,47 +48,123 @@ typedef struct DeclarationList
 	struct DeclarationList *next;
 }DeclarationList;
 
-static BucketList gs_hashTable[SIZE];
+static ExpandHash gs_expandHashTable;
 
 static DeclarationList gs_decList;
+
+void st_create()
+{
+	ExpandHash *expandHashNode = (ExpandHash *)malloc(sizeof(ExpandHash));
+	BucketList *hashTable = (BucketList *)malloc(SIZE*sizeof(BucketList));
+	expandHashNode->hash = hashTable;
+
+	if(gs_expandHashTable.next != NULL)
+	{
+		ExpandHash *nextHash = gs_expandHashTable.next;
+		gs_expandHashTable.next = expandHashNode;
+		expandHashNode->next = nextHash;
+	}
+	else
+		gs_expandHashTable.next = expandHashNode;
+}
+
+void removeHash(BucketList *hash)
+{
+	hash;
+}
+
+void st_remove()
+{
+	if(gs_expandHashTable.next != NULL)
+	{
+		ExpandHash *exHash = gs_expandHashTable.next;
+		if(exHash->next != NULL)
+		{
+			ExpandHash *exNext = exHash->next;
+			removeHash(exHash->hash);
+			free(exHash);
+			gs_expandHashTable.next = exNext;
+		}
+		else
+		{
+			removeHash(exHash->hash);
+			free(exHash);
+			gs_expandHashTable.next = NULL;
+		}
+	}
+}
 
 void st_insert(char *name, int lineno, int loc)
 {
 	int h = hash(name);
-	BucketList l = gs_hashTable[h];
+	ExpandHash *exHash = gs_expandHashTable.next;
+	if(exHash == NULL)
+	{
+		fprintf(listing, "exand hash table is NULL!\n");
+		return;
+	}
 
-	while((l != NULL) && (strcmp(name, l->name) != 0))
-		l = l->next;
+	while(exHash != NULL)
+	{
+		BucketList l = exHash->hash[h];
+
+		while((l != NULL) && (strcmp(name, l->name) != 0))
+			l = l->next;
 	
-	if(l == NULL)
-	{
-		l = (BucketList)malloc(sizeof(struct BucketListRec));
-		l->name = name;
-		l->lines = (LineList)malloc(sizeof(struct LineListRec));
-		l->lines->lineno = lineno;
-		l->memloc = loc;
-		l->lines->next = NULL;
-		l->next = gs_hashTable[h];
-		gs_hashTable[h] = l;
-	}
-	else
-	{
-		LineList t = l->lines;
-		while(t->next != NULL)
-			t = t->next;
+		if(l != NULL)
+		{
+			LineList t = l->lines;
+			while(t->next != NULL)
+				t = t->next;
 
-		t->next = (LineList)malloc(sizeof(struct LineListRec));
-		t->next->lineno = lineno;
-		t->next->next = NULL;
+			t->next = (LineList)malloc(sizeof(struct LineListRec));
+			t->next->lineno = lineno;
+			t->next->next = NULL;
+
+			return;
+		}
+	
+		exHash = exHash->next;
 	}
+	
+	BucketList l = gs_expandHashTable.next->hash[h];
+
+	l = (BucketList)malloc(sizeof(struct BucketListRec));
+	l->name = name;
+	l->lines = (LineList)malloc(sizeof(struct LineListRec));
+	l->lines->lineno = lineno;
+	l->memloc = loc;
+	l->lines->next = NULL;
+	l->next = gs_expandHashTable.next->hash[h];
+	gs_expandHashTable.next->hash[h] = l;
+
 }
 
 int st_lookup(char *name)
 {
 	int h = hash(name);
-	BucketList l = gs_hashTable[h];
-	while((l != NULL) && (strcmp(name, l->name) != 0))
-		l = l->next;
+	ExpandHash *exHash = gs_expandHashTable.next;
+	BucketList l = NULL;
+	while(exHash != NULL)
+	{
+		unsigned int isFound = FALSE;
+		BucketList l = exHash->hash[h];
+		while(l != NULL)
+		{
+			if(strcmp(name, l->name) == 0)
+			{
+				isFound = TRUE;
+				break;
+			}
+			else
+				l = l->next;
+		}
+
+		if(isFound == TRUE)
+			break;
+		else
+			exHash = exHash->next;
+	}
 
 	if(l == NULL)
 		return -1;
@@ -125,7 +207,7 @@ void removeInvalidDec()
 	DeclarationList *list = gs_decList.next;
 	while(list != NULL)
 	{
-		if((list->type == FunDecK) && (list->isValid == TRUE))
+		if((list->type == CompoundK) && (list->isValid == TRUE))
 			lastFuncDec = list;
 
 		list = list->next;
@@ -155,6 +237,7 @@ void insertDeclarationList(TreeNode *node, StmtKind type)
 		if(checkNode->nodekind == node->nodekind)
 		{
 			// declaration duplicate error!
+			fprintf(listing, "Declaration duplicated! name:%s\n", node->child[1]->attr.name);
 			return;
 		}
 	}
@@ -200,11 +283,18 @@ void printSymTab(FILE *listing)
 	fprintf(listing, "Variable Name Location Line Numbers\n");
 	fprintf(listing, "------------- -------- ------------\n");
 
+	ExpandHash *exHash = gs_expandHashTable.next;
+	if(exHash == NULL)
+	{
+		fprintf(listing, "expand hash for print is null");
+		return;
+	}
+
 	for(i=0; i<SIZE; ++i)
 	{
-		if(gs_hashTable[i] != NULL)
+		if(exHash->hash[i] != NULL)
 		{
-			BucketList l = gs_hashTable[i];
+			BucketList l = exHash->hash[i];
 			while(l != NULL)
 			{
 				LineList t = l->lines;
