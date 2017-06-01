@@ -31,6 +31,12 @@ typedef struct BucketListRec
 	LineList lines;
 	int memloc;
 	struct BucketListRec *next;
+
+	/* insert by pgm */
+	int scope;
+	StmtKind type;
+	int arr_size;
+	ExpType return_type;
 }* BucketList;
 
 typedef struct ExpandHash
@@ -93,7 +99,7 @@ void st_remove()
 	}
 }
 
-void st_insert(char *name, int lineno, int loc)
+void st_insert(char *name, int lineno, int loc, int scope, StmtKind type, int arr_size, ExpType return_type)
 {
 	int h = hash(name);
 	ExpandHash *exHash = gs_expandHashTable.next;
@@ -109,13 +115,13 @@ void st_insert(char *name, int lineno, int loc)
 
 		while((l != NULL) && (strcmp(name, l->name) != 0))
 			l = l->next;
-	
+
 		if(l != NULL)
 		{
 			LineList t = l->lines;
 			while(t->next != NULL)
 				t = t->next;
-			
+
 			if(t->lineno != lineno)
 			{
 				t->next = (LineList)malloc(sizeof(struct LineListRec));
@@ -125,13 +131,20 @@ void st_insert(char *name, int lineno, int loc)
 
 			return;
 		}
-	
+
 		exHash = exHash->next;
 	}
-	
+
 	BucketList l = gs_expandHashTable.next->hash[h];
 
 	l = (BucketList)malloc(sizeof(struct BucketListRec));
+	/* insert by pgm */
+	l->type = type;
+	l->arr_size = arr_size;
+	l->scope = scope;
+	l->return_type = return_type;
+	/* end of insert */
+
 	l->name = name;
 	l->lines = (LineList)malloc(sizeof(struct LineListRec));
 	l->lines->lineno = lineno;
@@ -261,8 +274,8 @@ void removeAllDeclarationList()
 void printSymTab(FILE *listing)
 {
 	int i;
-	fprintf(listing, "Variable Name Location Line Numbers\n");
-	fprintf(listing, "------------- -------- ------------\n");
+	fprintf(listing, "Variable Name Scope Location V/P/F  Array? ArrSize Type      Line Numbers\n");
+	fprintf(listing, "------------- ----- -------- ------ ------ ------- --------- ------------\n");
 
 	ExpandHash *exHash = gs_expandHashTable.next;
 	if(exHash == NULL)
@@ -280,7 +293,47 @@ void printSymTab(FILE *listing)
 			{
 				LineList t = l->lines;
 				fprintf(listing, "%-14s ", l->name);
+				fprintf(listing, "%-5d ", l->scope);
 				fprintf(listing, "%-8d  ", l->memloc);
+
+				switch(l->type){
+					case FunDecK:
+						fprintf(listing, "%-5s ","Func");
+						fprintf(listing, "%-6s ","No");
+						fprintf(listing, "%-7s ","-");
+						if(l->return_type == Integer)
+							fprintf(listing,"%-7s ","integer");
+						else
+							fprintf(listing,"%-7s ","void");
+
+						break;
+					case ParaDecK:
+						fprintf(listing, "%-5s ","Para");
+						fprintf(listing, "%-6s ","No");
+						fprintf(listing, "%-7s ","-");
+						fprintf(listing,"%-7s ","integer");
+						break;
+					case ParaArrDecK:
+						fprintf(listing, "%-5s ","Para");
+						fprintf(listing, "%-6s ","Array");
+						fprintf(listing, "%-7s ","0");
+						fprintf(listing,"%-7s ","array");
+						break;
+					case VarDecK:
+						fprintf(listing, "%-5s ","Var");
+						fprintf(listing, "%-6s ","No");
+						fprintf(listing, "%-7s ","-");
+						fprintf(listing,"%-7s ","integer");
+						break;
+					case ArrDecK:
+						fprintf(listing, "%-5s ","Var");
+						fprintf(listing, "%-6s ","Array");
+						fprintf(listing, "%-7d ",l->arr_size);
+						fprintf(listing,"%-7s ","array");
+						break;
+					default:
+						fprintf(listing,"Error in printSymtab> l->type is not parameter, function, variable\n");
+				}
 
 				while(t != NULL)
 				{

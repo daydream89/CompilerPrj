@@ -4,7 +4,7 @@
 void st_create();
 void st_remove();
 
-void st_insert(char *name, int lineno, int loc);
+void st_insert(char *name, int lineno, int loc, int scope, StmtKind type, int arr_size, ExpType return_type);
 
 int st_lookup(char *name);
 

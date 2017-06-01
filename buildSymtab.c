@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "symtab.h"
 #include "buildSymtab.h"
+#include "cminus.tab.h"
 
 static int location = 0;
 
@@ -81,16 +82,37 @@ static void insertNode(TreeNode *t)
 			{
 				case IdK:
 				{
-					if(st_lookup(t->attr.name) == -1)
-						st_insert(t->attr.name, t->lineno, location++);
-					else
-						st_insert(t->attr.name, t->lineno, 0);
-					
+					int array_size;
+					ExpType type;
 					TreeNode *decNode = findDeclaration(t->attr.name);
-					if(decNode != NULL)
-						t->typeDecNode = decNode;
-					else
+					if(decNode == NULL)
+					{
 						fprintf(listing, "this id is not assigned! id:%s\n", t->attr.name);
+						return;
+					}
+
+					if(decNode->kind.stmt == ArrDecK){
+						array_size = decNode->child[2]->attr.val;
+					}else{
+						array_size = 0;
+					}
+
+					if(decNode->kind.stmt == FunDecK){
+						switch(decNode->child[0]->attr.op){
+							case INT: type = Integer; break;
+							case VOID: type = Void; break;
+							default: fprintf(listing, "Function's return type is not int and void");
+						}
+					}else{
+						type = Integer;
+					}
+
+					if(st_lookup(t->attr.name) == -1)
+						st_insert(t->attr.name, t->lineno, location++,0,decNode->kind.stmt,array_size,type);
+					else
+						st_insert(t->attr.name, t->lineno, 0,0,decNode->kind.stmt,array_size,type);
+					
+					t->typeDecNode = decNode;
 				}break;
 
 				default:
