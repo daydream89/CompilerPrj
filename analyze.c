@@ -7,7 +7,6 @@
 
 #define DEBUG 0 
 
-static int location = 0;
 static int findMainFlag = FALSE;
 
 static void traverse(TreeNode * t,
@@ -103,7 +102,6 @@ static void ParameterChecking(TreeNode *t,TreeNode *formal_para_list, TreeNode *
 static void checkNode(TreeNode * t){
 	TreeNode* var_dec_node;
 	//if(DEBUG) printf("CheckNode\n");
-	StmtKind l_value_type;
 
 	switch(t->nodekind){
 		case ExpK:
@@ -166,13 +164,11 @@ static void checkNode(TreeNode * t){
 						typeError(t,"Assign applied to non-integer");
 					 */
 
-					if(t->child[0]->kind.stmt == IdK){
+					if(t->child[0]->kind.exp == IdK){
 						var_dec_node = t->child[0]->typeDecNode;
-						l_value_type = IdK;
 					}
-					else if(t->child[0]->kind.stmt == ArrK){
+					else if(t->child[0]->kind.exp == ArrK){
 						var_dec_node = t->child[0]->child[0]->typeDecNode;
-						l_value_type = ArrK;
 					}
 					else{
 						typeError(t,"[PASS #1 ERROR] Assignment's lvalue is not IdK or ArrK");
@@ -192,8 +188,6 @@ static void checkNode(TreeNode * t){
 						case VarDecK:
 						case ParaArrDecK:
 						case ArrDecK:
-							/*if(l_value_type == IdK)
-								typeError(t,"L-value is array's name");*/
 							break;
 						default:
 							typeError(t,"Assign applied to non-variable");

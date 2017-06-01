@@ -11,7 +11,6 @@
 #include "scan.h"
 #include "buildSymtab.h"
 #include "cminus.tab.h"
-#include "createSymTab.h"
 #include "analyze.h"
 
 /* parse.h inside */
@@ -28,7 +27,6 @@ int TraceScan = FALSE;
 int TraceParse = FALSE;
 int TraceAnalyse = TRUE;
 int TraceCode = TRUE;
-int CreateSymTab = FALSE;
 
 int Error = FALSE;	//프로그램 진행 중 error가 발생할 경우 true로 설정
 
@@ -57,13 +55,6 @@ int main (int argc, char* argv[]){
 	
 	syntaxTree = parse();
 	if(TraceParse){
-		fprintf(listing,"\nStnyax tree:\n");
-		printTree(syntaxTree);
-	}
-
-	if(CreateSymTab)
-	{
-		syntaxTree = CreateTempSymbolTable();
 		fprintf(listing,"\nStnyax tree:\n");
 		printTree(syntaxTree);
 	}

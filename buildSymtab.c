@@ -94,8 +94,6 @@ static void insertNode(TreeNode *t)
 			{
 				case IdK:
 				{
-					int array_size;
-					ExpType type;
 					TreeNode *decNode = NULL; /*findDeclaration(t->attr.name);*/
 
 					if(AfterDec == TRUE){
@@ -128,22 +126,6 @@ static void insertNode(TreeNode *t)
 						return;
 					}
 
-					if(decNode->kind.stmt == ArrDecK){
-						array_size = decNode->child[2]->attr.val;
-					}else{
-						array_size = 0;
-					}
-
-					if(decNode->kind.stmt == FunDecK){
-						switch(decNode->child[0]->attr.op){
-							case INT: type = Integer; break;
-							case VOID: type = Void; break;
-							default: fprintf(listing, "Function's return type is not int and void");
-						}
-					}else{
-						type = Integer;
-					}
-
 					st_insert(t->attr.name, t->lineno);
 					
 					t->typeDecNode = decNode;
@@ -164,8 +146,6 @@ static TreeNode *paramNode = NULL;
 static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(TreeNode*))
 {
 	int i;
-	if(Error)
-		return;
 
 	if(t != NULL)
 	{
@@ -180,7 +160,6 @@ static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(
 			if(paramNode != NULL)
 			{
 				traverse(paramNode, preProc, postProc);
-				if(Error) return;
 				paramNode = NULL;
 			}
 		}
@@ -196,8 +175,6 @@ static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(
 		}
 
 		preProc(t);
-		if(Error) return;
-
 		for(i=0; i<MAXCHILDREN; ++i)
 			traverse(t->child[i], preProc, postProc);
 
@@ -219,6 +196,4 @@ void buildSymtab_pass1(TreeNode *syntaxTree)
 	st_create();
 	traverse(syntaxTree, insertNode, nullProc);
 	printSymTab(listing);
-
-	removeAllDeclarationList();
 }

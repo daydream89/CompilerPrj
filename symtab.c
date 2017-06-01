@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#include "symtab.h"
+
 #define SIZE 211
 
 #define SHIFT 4
@@ -77,7 +79,7 @@ void st_create()
 
 void removeHash(BucketList *hash)
 {
-	hash;
+	return;
 }
 
 void st_remove()
@@ -277,68 +279,13 @@ TreeNode *findLastFuncDec()
 	return decNode;
 }
 
-// VarDecK와 FunDecK node를 받아서 gs_decList에 저장한다.
-// 중복에 대한 에러 처리도 함께 한다.
-void insertDeclarationList(TreeNode *node, StmtKind type)
-{
-	if(node == NULL)
-		return;
-
-	if(node->child[1] == NULL)
-		return;
-
-	TreeNode *checkNode = findDeclaration(node->child[1]->attr.name);
-	if(checkNode != NULL)
-	{
-		if(checkNode->nodekind == node->nodekind)
-		{
-			// declaration duplicate error!
-			fprintf(listing, "Declaration duplicated! name:%s\n", node->child[1]->attr.name);
-			return;
-		}
-	}
-
-	DeclarationList *decNode = (DeclarationList *)malloc(sizeof(DeclarationList));
-	if(decNode != NULL)
-	{
-		decNode->name = copyString(node->child[1]->attr.name);
-		decNode->type = type;
-		decNode->node = node;
-
-		DeclarationList *list = &gs_decList;
-		while(list->next != NULL)
-			list = list->next;
-
-		list->next = decNode;
-	}
-}
-
-void removeAllDeclarationList()
-{
-	while(gs_decList.next != NULL)
-	{
-		DeclarationList *tmp = gs_decList.next;
-		if(tmp->next != NULL)
-		{
-			DeclarationList *tmp2 = tmp->next;
-			free(tmp);
-			gs_decList.next = tmp2;
-		}
-		else
-		{
-			free(tmp);
-			gs_decList.next = NULL;
-		}
-	}
-}
-
 void printSymTab(FILE *listing)
 {
 	int i;
 
 	if(Error) return;
 
-	fprintf(listing, "Variable Name Scope Location V/P/F  Array? ArrSize Type      Line Numbers\n");
+	fprintf(listing, "\nVariable Name Scope Location V/P/F  Array? ArrSize Type      Line Numbers\n");
 	fprintf(listing, "------------- ----- -------- ------ ------ ------- --------- ------------\n");
 
 	ExpandHash *exHash = gs_expandHashTable.next;
