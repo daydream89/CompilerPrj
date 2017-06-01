@@ -37,8 +37,7 @@ static void insertNode(TreeNode *t)
 				// TreeNode를 저장해두고 st_insert할 때 typeDecNode에 넣어준다.
 				case ArrDecK:
 				{
-					if(t->child[0] != NULL)
-						insertDeclarationList(t->child[0], ArrDecK);
+					insertDeclarationList(t, ArrDecK);
 				}break;
 
 				case ParaDecK:
