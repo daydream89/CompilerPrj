@@ -36,7 +36,9 @@ typedef struct BucketListRec
 typedef struct DeclarationList
 {
 	char *name;
+	StmtKind type;
 	TreeNode *node;
+	unsigned int isValid;
 	struct DeclarationList *next;
 }DeclarationList;
 
@@ -93,7 +95,7 @@ TreeNode *findDeclaration(char *name)
 	DeclarationList *list = gs_decList.next;
 	while(list != NULL)
 	{
-		if(strcmp(name, list->name) == 0)
+		if(strcmp(name, list->name) == 0 && (list->isValid == TRUE))
 			return list->node;
 		else
 			list = list->next;
@@ -102,9 +104,44 @@ TreeNode *findDeclaration(char *name)
 	return NULL;
 }
 
+TreeNode *findLastFuncDec()
+{
+	TreeNode *decNode = NULL;
+	DeclarationList *list = gs_decList.next;
+	while(list != NULL)
+	{
+		if((list->type == FunDecK) && (list->isValid == TRUE))
+			decNode = list->node;
+
+		list = list->next;
+	}
+
+	return decNode;
+}
+
+void removeInvalidDec()
+{
+	DeclarationList *lastFuncDec = NULL;
+	DeclarationList *list = gs_decList.next;
+	while(list != NULL)
+	{
+		if((list->type == FunDecK) && (list->isValid == TRUE))
+			lastFuncDec = list;
+
+		list = list->next;
+	}
+
+	list = lastFuncDec;
+	while(list != NULL)
+	{
+		list->isValid = FALSE;
+		list = list->next;
+	}
+}
+
 // VarDecK와 FunDecK node를 받아서 gs_decList에 저장한다.
 // 중복에 대한 에러 처리도 함께 한다.
-void insertDeclarationList(TreeNode *node)
+void insertDeclarationList(TreeNode *node, StmtKind type)
 {
 	if(node == NULL)
 		return;
@@ -126,13 +163,34 @@ void insertDeclarationList(TreeNode *node)
 	if(decNode != NULL)
 	{
 		decNode->name = copyString(node->child[1]->attr.name);
+		decNode->type = type;
 		decNode->node = node;
+		decNode->isValid = TRUE;
 
 		DeclarationList *list = &gs_decList;
 		while(list->next != NULL)
 			list = list->next;
 
 		list->next = decNode;
+	}
+}
+
+void removeAllDeclarationList()
+{
+	while(gs_decList.next != NULL)
+	{
+		DeclarationList *tmp = gs_decList.next;
+		if(tmp->next != NULL)
+		{
+			DeclarationList *tmp2 = tmp->next;
+			free(tmp);
+			gs_decList.next = tmp2;
+		}
+		else
+		{
+			free(tmp);
+			gs_decList.next = NULL;
+		}
 	}
 }
 
