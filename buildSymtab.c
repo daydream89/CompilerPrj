@@ -4,6 +4,12 @@
 #include "cminus.tab.h"
 
 static int location = 0;
+static int global_location = 0;
+
+static int AfterDec = FALSE;
+static TreeNode* lastFuncDec = NULL;
+static TreeNode* lastDec = NULL;
+static int scope = 0;
 
 static void nullProc(TreeNode *t)
 {
@@ -31,31 +37,37 @@ static void insertNode(TreeNode *t)
 				// TreeNode를 저장해두고 st_insert할 때 typeDecNode에 넣어준다.
 				case VarDecK:
 				{
-					insertDeclarationList(t, VarDecK);
+					AfterDec = TRUE;
+					lastDec = t;
 				}break;
 
 				// 배열 변수 선언.
 				// TreeNode를 저장해두고 st_insert할 때 typeDecNode에 넣어준다.
 				case ArrDecK:
 				{
-					insertDeclarationList(t, ArrDecK);
+					AfterDec = TRUE;
+					lastDec = t;
 				}break;
 
 				case ParaDecK:
 				{
-					insertDeclarationList(t, ParaDecK);
+					AfterDec = TRUE;
+					lastDec = t;
 				}break;
 
 				case ParaArrDecK:
 				{
-					insertDeclarationList(t, ParaArrDecK);
+					AfterDec = TRUE;
+					lastDec = t;
 				}break;
 
 				// 함수 선언.
 				// TreeNode를 저장해두고 st_insert할 때 typeDecNode에 넣어준다.
 				case FunDecK:
 				{
-					insertDeclarationList(t, FunDecK);
+					AfterDec = TRUE;
+					lastFuncDec = t;
+					lastDec = t;
 				}break;
 
 				// {} 괄호 내부의 statement.
@@ -66,7 +78,7 @@ static void insertNode(TreeNode *t)
 				// return 문. 함수와 연결.
 				case ReturnK:
 				{
-					TreeNode *decNode = findLastFuncDec();
+					TreeNode *decNode = lastFuncDec;
 					if(decNode != NULL)
 						t->typeDecNode = decNode;
 				}break;
@@ -84,10 +96,35 @@ static void insertNode(TreeNode *t)
 				{
 					int array_size;
 					ExpType type;
-					TreeNode *decNode = findDeclaration(t->attr.name);
+					TreeNode *decNode = NULL; /*findDeclaration(t->attr.name);*/
+
+					if(AfterDec == TRUE){
+						int array_size = 0;
+						ExpType return_type=Integer;
+
+						if(lastDec->kind.stmt == ArrDecK)
+							array_size = lastDec->child[2]->attr.val;
+
+						if(lastDec->kind.stmt == FunDecK && lastDec->child[0]->attr.op == VOID)
+							return_type = Void;
+						
+						if(scope == 0)
+							insertDeclaration(t->attr.name, t->lineno, global_location++,scope,lastDec->kind.stmt,array_size,return_type,lastDec);
+						else
+							insertDeclaration(t->attr.name, t->lineno, location++,scope,lastDec->kind.stmt,array_size,return_type,lastDec);
+						
+						lastDec = NULL;
+						AfterDec = FALSE;
+
+						return;
+					}
+
+					decNode = findDeclaration(t->attr.name);
+
 					if(decNode == NULL)
 					{
 						fprintf(listing, "this id is not assigned! id:%s\n", t->attr.name);
+						Error = TRUE;
 						return;
 					}
 
@@ -107,10 +144,7 @@ static void insertNode(TreeNode *t)
 						type = Integer;
 					}
 
-					if(st_lookup(t->attr.name) == -1)
-						st_insert(t->attr.name, t->lineno, location++,0,decNode->kind.stmt,array_size,type);
-					else
-						st_insert(t->attr.name, t->lineno, 0,0,decNode->kind.stmt,array_size,type);
+					st_insert(t->attr.name, t->lineno);
 					
 					t->typeDecNode = decNode;
 				}break;
@@ -130,6 +164,8 @@ static TreeNode *paramNode = NULL;
 static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(TreeNode*))
 {
 	int i;
+	if(Error)
+		return;
 
 	if(t != NULL)
 	{
@@ -138,10 +174,13 @@ static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(
 		{
 			st_create();
 			isCompound = TRUE;
+			scope++;
+			location=0;
 
 			if(paramNode != NULL)
 			{
 				traverse(paramNode, preProc, postProc);
+				if(Error) return;
 				paramNode = NULL;
 			}
 		}
@@ -157,6 +196,7 @@ static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(
 		}
 
 		preProc(t);
+		if(Error) return;
 
 		for(i=0; i<MAXCHILDREN; ++i)
 			traverse(t->child[i], preProc, postProc);
@@ -167,6 +207,7 @@ static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(
 		{
 			printSymTab(listing);
 			st_remove();
+			scope--;
 		}
 
 		traverse(t->sibling, preProc, postProc);

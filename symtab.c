@@ -37,6 +37,8 @@ typedef struct BucketListRec
 	StmtKind type;
 	int arr_size;
 	ExpType return_type;
+
+	TreeNode* dec_node;
 }* BucketList;
 
 typedef struct ExpandHash
@@ -99,7 +101,7 @@ void st_remove()
 	}
 }
 
-void st_insert(char *name, int lineno, int loc, int scope, StmtKind type, int arr_size, ExpType return_type)
+void st_insert(char *name, int lineno)
 {
 	int h = hash(name);
 	ExpandHash *exHash = gs_expandHashTable.next;
@@ -134,6 +136,22 @@ void st_insert(char *name, int lineno, int loc, int scope, StmtKind type, int ar
 
 		exHash = exHash->next;
 	}
+}
+
+void insertDeclaration(char *name, int lineno, int loc, int scope, StmtKind type, int arr_size, ExpType return_type, TreeNode* dec_node){
+	int h = hash(name);
+	ExpandHash *exHash = gs_expandHashTable.next;
+	if(exHash == NULL)
+	{
+		fprintf(listing, "exand hash table is NULL!\n");
+		return;
+	}
+
+	if(checkDuplicateDeclare(name) == TRUE){
+		fprintf(listing, "duplicated declare is found: %s\n",name);
+		Error = TRUE;
+		return;
+	}
 
 	BucketList l = gs_expandHashTable.next->hash[h];
 
@@ -143,6 +161,7 @@ void st_insert(char *name, int lineno, int loc, int scope, StmtKind type, int ar
 	l->arr_size = arr_size;
 	l->scope = scope;
 	l->return_type = return_type;
+	l->dec_node = dec_node;
 	/* end of insert */
 
 	l->name = name;
@@ -152,7 +171,6 @@ void st_insert(char *name, int lineno, int loc, int scope, StmtKind type, int ar
 	l->lines->next = NULL;
 	l->next = gs_expandHashTable.next->hash[h];
 	gs_expandHashTable.next->hash[h] = l;
-
 }
 
 int st_lookup(char *name)
@@ -163,7 +181,7 @@ int st_lookup(char *name)
 	while(exHash != NULL)
 	{
 		unsigned int isFound = FALSE;
-		BucketList l = exHash->hash[h];
+		l = exHash->hash[h];
 		while(l != NULL)
 		{
 			if(strcmp(name, l->name) == 0)
@@ -187,18 +205,61 @@ int st_lookup(char *name)
 		return l->memloc;
 }
 
+int checkDuplicateDeclare(char* name){
+	int h = hash(name);
+	ExpandHash *exHash = gs_expandHashTable.next;
+	BucketList l = NULL;
+	{
+		unsigned int isFound = FALSE;
+		l = exHash->hash[h];
+		while(l != NULL)
+		{
+			if(strcmp(name, l->name) == 0)
+			{
+				isFound = TRUE;
+				break;
+			}
+			else
+				l = l->next;
+		}
+
+		return isFound;
+	}
+}
+
 TreeNode *findDeclaration(char *name)
 {
-	DeclarationList *list = gs_decList.next;
-	while(list != NULL)
+	int h = hash(name);
+	ExpandHash *exHash = gs_expandHashTable.next;
+	BucketList l = NULL;
+	while(exHash != NULL)
 	{
-		if(strcmp(name, list->name) == 0)
-			return list->node;
+		unsigned int isFound = FALSE;
+		l = exHash->hash[h];
+		while(l != NULL)
+		{
+			if(strcmp(name, l->name) == 0)
+			{
+				isFound = TRUE;
+				break;
+			}
+			else
+				l = l->next;
+		}
+
+		if(isFound == TRUE)
+			break;
 		else
-			list = list->next;
+			exHash = exHash->next;
 	}
 
-	return NULL;
+	if(l == NULL){
+		return NULL;
+	}
+	else{
+		return l->dec_node;
+	}
+
 }
 
 TreeNode *findLastFuncDec()
@@ -274,6 +335,9 @@ void removeAllDeclarationList()
 void printSymTab(FILE *listing)
 {
 	int i;
+
+	if(Error) return;
+
 	fprintf(listing, "Variable Name Scope Location V/P/F  Array? ArrSize Type      Line Numbers\n");
 	fprintf(listing, "------------- ----- -------- ------ ------ ------- --------- ------------\n");
 
