@@ -41,6 +41,16 @@ static void insertNode(TreeNode *t)
 						insertDeclarationList(t->child[0], ArrDecK);
 				}break;
 
+				case ParaDecK:
+				{
+					insertDeclarationList(t, ParaDecK);
+				}break;
+
+				case ParaArrDecK:
+				{
+					insertDeclarationList(t, ParaArrDecK);
+				}break;
+
 				// 함수 선언.
 				// TreeNode를 저장해두고 st_insert할 때 typeDecNode에 넣어준다.
 				case FunDecK:
@@ -81,9 +91,7 @@ static void insertNode(TreeNode *t)
 					if(decNode != NULL)
 						t->typeDecNode = decNode;
 					else
-					{
-						//fprintf
-					}
+						fprintf(listing, "this id is not assigned! id:%s\n", t->attr.name);
 				}break;
 
 				default:
@@ -117,6 +125,7 @@ static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(
 			}
 		}
 
+		// parameter를 scope 안으로 포함시키기 위해 탐색을 유보.
 		if(paramNode == NULL)
 		{
 			if(t->nodekind == StmtK && (t->kind.stmt == ParaDecK || t->kind.stmt == ParaArrDecK))
