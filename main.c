@@ -12,6 +12,7 @@
 #include "buildSymtab.h"
 #include "cminus.tab.h"
 #include "createSymTab.h"
+#include "analyze.h"
 
 /* parse.h inside */
 TreeNode* parse(void);
@@ -69,6 +70,9 @@ int main (int argc, char* argv[]){
 
 	fprintf(listing, "\nBuilding Symbol Table...\n");
 	buildSymtab_pass1(syntaxTree);		// pass1
+	
+	fprintf(listing,"\nSymantic Analyze Start...\n");
+	typeCheck(syntaxTree);	
 
 	return 0;
 }

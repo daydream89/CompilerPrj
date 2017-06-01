@@ -95,9 +95,7 @@ fun_declaration   : type_specifier dec_var LPAREN params RPAREN compound_stmt
 params            : param_list
                       { $$ = $1; }
                   | VOID
-                      { $$ = newExpNode(TypeK);
-                        $$->attr.op = VOID;
-                      }
+                      { $$ = NULL; }
                   ;
 param_list        : param_list COMMA param
                       { YYSTYPE t = $1;
@@ -203,7 +201,7 @@ var               : dec_var
                   | dec_var LBRACK expression RBRACK
                       { $$ = newExpNode(ArrK);
 												$$->child[0] = $1;
-												$$->child[2] = $3;
+												$$->child[1] = $3;
                       }
                   ;
 simple_expression : additive_expression LTOE additive_expression
