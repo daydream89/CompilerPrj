@@ -28,14 +28,17 @@ static void insertNode(TreeNode *t)
 			{
 				case AssignK:
 				{
+					/*
+					fprintf(listing, "assignK : %s\n", t->attr.name);
 					if(st_lookup(t->attr.name) == -1)
 						st_insert(t->attr.name, t->lineno, location++);
 					else
 						st_insert(t->attr.name, t->lineno, 0);
-
+					
 					TreeNode *decNode = findDeclaration(t->attr.name);
 					if(decNode != NULL)
 						t->typeDecNode = decNode;
+					*/
 				}break;
 
 				// 변수 선언. TreeNode를 저장해두고 st_insert할 때 typeDecNode에 넣어준다.
@@ -65,6 +68,10 @@ static void insertNode(TreeNode *t)
 						st_insert(t->attr.name, t->lineno, location++);
 					else
 						st_insert(t->attr.name, t->lineno, 0);
+					
+					TreeNode *decNode = findDeclaration(t->attr.name);
+					if(decNode != NULL)
+						t->typeDecNode = decNode;
 				}break;
 
 				default:
