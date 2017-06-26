@@ -194,9 +194,10 @@ static void checkNode(TreeNode * t){
 					}
 					if(t->child[0]->type != Integer)
 						typeError(t,"L-value is not variable");
-					else if(t->child[0]->type == Integer && t->child[1]->type != Integer)
+					else if(t->child[0]->type == Integer 
+							&& (t->child[1]->type != Integer && t->child[1]->type != Boolean))
 						typeError(t,"L-value's type is not same as R-value's type");
-
+					
 					t->type = t->child[0]->type;
 
 					break;

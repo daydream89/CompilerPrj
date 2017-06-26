@@ -25,7 +25,7 @@ FILE * listing;	//Output Stream
 int EchoSource = TRUE;
 int TraceScan = FALSE;
 int TraceParse = FALSE;
-int TraceAnalyse = TRUE;
+int TraceAnalyse = FALSE;
 int TraceCode = TRUE;
 
 int Error = FALSE;	//프로그램 진행 중 error가 발생할 경우 true로 설정
@@ -65,6 +65,21 @@ int main (int argc, char* argv[]){
 	if(!Error){
 		fprintf(listing,"\nSymantic Analyze Start...\n");
 		typeCheck(syntaxTree);	
+	}
+
+	if(!Error){
+		char* codefile;
+		int fnlen = strcspn(pgm,".");
+		codefile = (char*)calloc(fnlen+4,sizeof(char));
+		strncpy(codefile,pgm,fnlen);
+		strcat(codefile,".tm");
+		code = fopen(codefile,"w");
+		if(code == NULL){
+			printf("Unable to open %s\n",codefile);
+			exit(1);
+		}
+		codeGen(syntaxTree,codefile);
+		fclose(code);
 	}
 	return 0;
 }
