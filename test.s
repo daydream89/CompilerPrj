@@ -1,9 +1,10 @@
 # C-- Compilation to SPIM Code
-# File: test.tm
+# File: test.s
 # Standard prelude:
 	.text
 # End of standard prelude.
 # -> Function Declaration
+.globl bubbleSort
 bubbleSort:
 	 addi		$sp,	$sp,	-8	# add: reserve space for fp, ra
 	   sw		$fp,	4($sp) 	# save fp
@@ -24,6 +25,7 @@ _lab_0:
 	   jr		$ra	# return to caller
 # <- Function Declaration
 # -> Function Declaration
+.globl main
 main:
 	 addi		$sp,	$sp,	-8	# add: reserve space for fp, ra
 	   sw		$fp,	4($sp) 	# save fp

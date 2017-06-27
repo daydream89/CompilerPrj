@@ -9,6 +9,12 @@
 #define WORDSIZE 4
 #define NUMOFTMPREG 10
 
+char RegName[32][6] = {"$zero", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
+	    "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$s0", "$s1", "$s2", "$s3", "$s4",
+	    "$s5", "$s6", "$s7", "$t8", "$t9", "$k0", "$k1", "$gp", "$sp", "$fp" ,"$ra"};
+
+char TmpRegName[10][4] = {"$t0","$t1","$t2","$t3","$t4","$t5","$t6","$t7","$t8","$t9"};
+
 static void cGen(TreeNode * tree,char* return_label);
 
 /* Need To Fix */
@@ -83,19 +89,27 @@ static void retrive_FP_RA(void){
 }
 
 static int argumentPush(TreeNode* tree){
-	int size=0;
-	
-	while(tree){
-		size+=WORDSIZE;
-		emitRI_3("addi","$sp","$sp",-WORDSIZE,"add: retrive space for pushing argument");
-		cGen(tree,NULL);//계산 결과는 last temp register에 있다.
-		emitRM("sw",TmpRegName[currentTmpReg()],0,"$sp","push argument");
-		removeTmpReg(1);
+	int num=0;
+	int i;
+	int cur_tmp;
 
+	cGen(tree,NULL);
+
+	cur_tmp = currentTmpReg();
+
+	while(tree){
+		num++;
 		tree = tree->sibling;
 	}
 
-	return size;
+	if(num)
+		emitRI_3("addi","$sp","$sp",-num*WORDSIZE,"add: retrive space for pushing argument");
+
+	for(i=num-1;i>=0;i--){
+		emitRM("sw",TmpRegName[cur_tmp-i],(num-1-i)*WORDSIZE,"$sp","push argument");
+	}
+	
+	return num*WORDSIZE;
 }
 
 static int _isConst(TreeNode* tree){
@@ -191,6 +205,7 @@ static void genStmt(TreeNode * tree,char* return_label){
 		case FunDecK:
 			if(TraceCode) emitComment("-> Function Declaration");
 		
+			fprintf(code,".globl %s\n",tree->child[1]->attr.name);
 			emitLabel(tree->child[1]->attr.name);
 			getLabel(label1);
 			
@@ -429,6 +444,7 @@ void codeGen(TreeNode* syntaxTree,char* codefile){
 	emitComment(s);
 
 	emitComment("Standard prelude:");
+	fprintf(code,"	.text\n");
 	emitComment("End of standard prelude.");
 
 	cGen(syntaxTree,NULL);
