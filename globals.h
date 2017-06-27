@@ -77,7 +77,19 @@ typedef struct treeNode{
 	ExpType type; /* for type checking of exps */
 	struct treeNode *typeDecNode;	/* for pointing variable type declaration node */
 	int loc;
+	int local_val_size;
 }TreeNode;
+
+typedef enum {zero, at, v0, a0, a1, a2, a3, t0, t1, t2, t3, t4, t5, t6, t7, s0, s1, s2, s3, s4, s5, s6,
+		s7, t8, t9, k0, k1, gp, sp, fp, ra} RegKind;
+
+typedef struct gValueNode
+{
+	struct gValueNode *next;
+	TreeNode *node;
+}GValueNode;
+
+static GValueNode *gs_globalVariableList;
 
 /********************************************/
 /*******         Flags for tracing      *****/

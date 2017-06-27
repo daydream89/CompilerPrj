@@ -32,6 +32,28 @@ int TraceCode = TRUE;
 
 int Error = FALSE;	//프로그램 진행 중 error가 발생할 경우 true로 설정
 
+void RemoveGlobalVariableList()
+{
+	if(gs_globalVariableList == NULL)
+		return;
+
+	while(gs_globalVariableList->next != NULL)
+	{
+		GValueNode *next = gs_globalVariableList->next;
+		if(next->next != NULL)
+		{
+			gs_globalVariableList->next = next->next;
+			free(next);
+		}
+		else
+		{
+			free(next);
+		}
+	}
+
+	gs_globalVariableList = NULL;
+}
+
 int main (int argc, char* argv[]){
 	TreeNode * syntaxTree;
 	char pgm[20]; /* source code file name */
@@ -83,6 +105,9 @@ int main (int argc, char* argv[]){
 		codeGen(syntaxTree,codefile);
 		fclose(code);
 	}
+
+	RemoveGlobalVariableList();
+
 	return 0;
 }
 

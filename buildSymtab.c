@@ -166,6 +166,21 @@ static void insertNode(TreeNode *t)
 						loc = calculateLocation(lastDec->kind.stmt, array_size);
 						t->loc = loc;
 
+						// if treeNode is global variable,
+						// insert treeNode into gs_globalVariableList
+						if(scope == 0 && lastDec->kind.stmt == VarDecK)
+						{
+							GValueNode *gValueNode = (GValueNode *)malloc(sizeof(gValueNode));
+							gValueNode->node = lastDec;
+							gValueNode->next = NULL;
+
+							GValueNode *ptr = gs_globalVariableList;
+							while(ptr->next != NULL)
+								ptr = ptr->next;
+
+							ptr->next = gValueNode;
+						}
+
 						if(scope == 0)
 						{
 							insertDeclaration(t->attr.name, t->lineno, loc, scope, lastDec->kind.stmt, array_size, return_type, lastDec);
