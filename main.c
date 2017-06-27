@@ -22,6 +22,7 @@ int lineno = 0;
 FILE * source;	//C-Language Source File
 FILE * listing;	//Output Stream
 FILE * code;
+GValueNode *gs_globalVariableList;
 
 /* allocate and set racing flags */
 int EchoSource = TRUE;
@@ -35,22 +36,28 @@ int Error = FALSE;	//프로그램 진행 중 error가 발생할 경우 true로 �
 void RemoveGlobalVariableList()
 {
 	if(gs_globalVariableList == NULL)
-		return;
-
-	while(gs_globalVariableList->next != NULL)
 	{
-		GValueNode *next = gs_globalVariableList->next;
-		if(next->next != NULL)
+		return;
+	}
+
+	GValueNode *cur = gs_globalVariableList->next;
+	while(cur != NULL)
+	{
+		if(cur->next != NULL)
 		{
-			gs_globalVariableList->next = next->next;
-			free(next);
+			GValueNode *next = cur->next;
+			free(cur);
+			gs_globalVariableList->next = next;
+			cur = next;
 		}
 		else
 		{
-			free(next);
+			free(cur);
+			break;
 		}
 	}
-
+	
+	free(gs_globalVariableList);
 	gs_globalVariableList = NULL;
 }
 

@@ -90,7 +90,7 @@ typedef struct gValueNode
 	TreeNode *node;
 }GValueNode;
 
-static GValueNode *gs_globalVariableList;
+extern GValueNode *gs_globalVariableList;
 
 /********************************************/
 /*******         Flags for tracing      *****/

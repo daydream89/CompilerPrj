@@ -3,7 +3,7 @@
 #include "buildSymtab.h"
 #include "cminus.tab.h"
 
-static int location = -4;
+static int local_location = -4;
 static int param_location = 0;
 static int global_location = -4;
 static int function_location = -1;
@@ -25,8 +25,8 @@ static int calculateLocation(StmtKind stmtKind, int array_size)
 		}
 		else
 		{
-			location -= 4;
-			loc = location;
+			local_location -= 4;
+			loc = local_location;
 		}
 	}
 	else if(stmtKind == ArrDecK)
@@ -38,8 +38,8 @@ static int calculateLocation(StmtKind stmtKind, int array_size)
 		}
 		else
 		{
-			location -= (4 * array_size);
-			loc = location;
+			local_location -= (4 * array_size);
+			loc = local_location;
 		}
 	}
 	else if(stmtKind == ParaDecK)
@@ -121,13 +121,14 @@ static void insertNode(TreeNode *t)
 					AfterDec = TRUE;
 					lastFuncDec = t;
 					lastDec = t;
+
+					local_location = -4;
+					param_location = 0;
 				}break;
 
 				// {} 괄호 내부의 statement.
 				case CompoundK:
 				{
-					location = -4;
-					param_location = 0;
 				}break;
 
 				// return 문. 함수와 연결.
@@ -168,7 +169,7 @@ static void insertNode(TreeNode *t)
 
 						// if treeNode is global variable,
 						// insert treeNode into gs_globalVariableList
-						if(scope == 0 && lastDec->kind.stmt == VarDecK)
+						if(scope == 0 && (lastDec->kind.stmt == VarDecK || lastDec->kind.stmt == ArrDecK))
 						{
 							lastDec->is_global = TRUE;
 							GValueNode *gValueNode = (GValueNode *)malloc(sizeof(gValueNode));
@@ -178,14 +179,18 @@ static void insertNode(TreeNode *t)
 							GValueNode *ptr = gs_globalVariableList;
 							if(ptr == NULL)
 							{
+								printf("first global\n");
 								gs_globalVariableList = gValueNode;
 							}
 							else
 							{
 								while(ptr->next != NULL)
+								{
 									ptr = ptr->next;
+								}
 
 								ptr->next = gValueNode;
+								printf("next global\n");
 							}
 						}
 						else
@@ -244,7 +249,6 @@ static void traverse(TreeNode *t, void(* preProc)(TreeNode *), void(* postProc)(
 			st_create();
 			isCompound = TRUE;
 			scope++;
-			location=0;
 
 			if(paramNode != NULL)
 			{
