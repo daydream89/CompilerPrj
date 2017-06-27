@@ -159,7 +159,10 @@ statement					: expression_stmt { $$ = $1; }
                   | return_stmt { $$ = $1; }
                   ;
 expression_stmt   : expression SEMI
-                      { $$ = $1; }
+                      { 
+												$$ = newStmtNode(ExpStmtK);
+												$$->child[0] = $1;
+											}
                   | SEMI
                       { $$ = NULL; }
                   ;

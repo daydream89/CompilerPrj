@@ -13,7 +13,7 @@ char RegName[32][6] = {"$zero", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
 	    "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$s0", "$s1", "$s2", "$s3", "$s4",
 	    "$s5", "$s6", "$s7", "$t8", "$t9", "$k0", "$k1", "$gp", "$sp", "$fp" ,"$ra"};
 
-char TmpRegName[10][4] = {"$t0","$t1","$t2","$t3","$t4","$t5","$t6","$t7","$t8","$t9"};
+char TempRegName[10][4] = {"$t0","$t1","$t2","$t3","$t4","$t5","$t6","$t7","$t8","$t9"};
 
 static void cGen(TreeNode * tree,char* return_label);
 
@@ -21,54 +21,81 @@ static void cGen(TreeNode * tree,char* return_label);
 // 1. 숫자 출력 hex와 dec 혼동되어 있으니 dec가 가능하면 dec로 통일할 것
 // 2. Array Accessing은 indirect로 변경(parameter declrae인 경우에만)
 // 3. Argument의 Location 값은 일괄적으로 44씩 더하자(teempReg를 위한 40byte, 저장된 fp를 위한 4byte)
-static int tmpReg = 0; //사용되지 않은 tmpReg 중 가장 작은 idx
-
-static int nextTempReg(void){
-	if(tmpReg == 10){
-		return -1;
-	}else{
-		return tmpReg++;
+static int getLocation(TreeNode* dec_node){
+	switch(dec_node->kind.stmt){
+		case ParaDecK:
+		case ParaArrDecK:
+			return dec_node->child[1]->loc + 40;
+			break;
+		case ArrDecK:
+		case VarDecK:
+			return dec_node->child[1]->loc;
+			break;
+		default:
+			printf("ERROR: decNode is not declaration\n");
+			exit(1);
+			break;
 	}
 }
 
-//현재 사용중인 tmpReg중 가장 큰 값
-static int currentTmpReg(void){
-	return tmpReg-1;	
+static int _is_global(TreeNode* node){
+	return node->is_global;
 }
 
-static void removeTmpReg(int val){
-	tmpReg = tmpReg - val;
-	if(tmpReg < 0){
-		printf("ERROR: tmpReg < 0");
+static int tempReg = 0; //사용되지 않은 tempReg 중 가장 작은 idx
+
+static int nextTempReg(void){
+	if(tempReg == 10){
+		return -1;
+	}else{
+		return tempReg++;
+	}
+}
+
+//현재 사용중인 tempReg중 가장 큰 값
+static int currentTempReg(void){
+	return tempReg-1;	
+}
+
+static void removeTempReg(int val){
+	tempReg = tempReg - val;
+	if(tempReg < 0){
+		printf("ERROR: tempReg < 0");
 		exit(1);
 	}
 }
 
-static int savedTmpReg[100];
-static int savedTmpRegIdx = 0;
+static void removeAllTempReg(void){
+	tempReg = 0;
+}
 
-static void saveTmpReg(void){
+static int savedTempReg[100];
+static int savedTempRegIdx = 0;
+
+static void saveTempReg(void){
 	int i;
 
-	savedTmpReg[savedTmpRegIdx++] = tmpReg;
+	savedTempReg[savedTempRegIdx++] = tempReg;
 
 	emitRI_3("addi","$sp","$sp",NUMOFTMPREG*WORDSIZE,"add: reserve space for save temp register");
 	for(i=0;i<NUMOFTMPREG;i++){
 		int loc;
 		loc = (NUMOFTMPREG-i-1) * WORDSIZE; 
-		emitRM("sw",TmpRegName[i],loc,"$sp","save tmp register");
+		emitRM("sw",TempRegName[i],loc,"$sp","save temp register");
 	}
+
+	tempReg = 0;
 }
 
-static void retriveTmpReg(void){
+static void retriveTempReg(void){
 	int i;
 
-	tmpReg = savedTmpReg[--savedTmpRegIdx];
+	tempReg = savedTempReg[--savedTempRegIdx];
 
 	for(i=0;i<NUMOFTMPREG;i++){
 		int loc;
 		loc = (NUMOFTMPREG-i-1) * WORDSIZE;
-		emitRM("lw",TmpRegName[i],loc,"$sp","retrive tmp register");
+		emitRM("lw",TempRegName[i],loc,"$sp","retrive temp register");
 	}
 
 	emitRI_3("addi","$sp","$sp",NUMOFTMPREG*WORDSIZE,"add: retrive space for saved temp register");
@@ -91,11 +118,11 @@ static void retrive_FP_RA(void){
 static int argumentPush(TreeNode* tree){
 	int num=0;
 	int i;
-	int cur_tmp;
+	int cur_temp;
 
 	cGen(tree,NULL);
 
-	cur_tmp = currentTmpReg();
+	cur_temp = currentTempReg();
 
 	while(tree){
 		num++;
@@ -106,8 +133,10 @@ static int argumentPush(TreeNode* tree){
 		emitRI_3("addi","$sp","$sp",-num*WORDSIZE,"add: retrive space for pushing argument");
 
 	for(i=num-1;i>=0;i--){
-		emitRM("sw",TmpRegName[cur_tmp-i],(num-1-i)*WORDSIZE,"$sp","push argument");
+		emitRM("sw",TempRegName[cur_temp-i],(num-1-i)*WORDSIZE,"$sp","push argument");
 	}
+
+	removeTempReg(num);
 	
 	return num*WORDSIZE;
 }
@@ -138,7 +167,7 @@ static void returnLabel(int howMany){
 	}
 }
 
-static int tmpOffset = 0;
+static int tempOffset = 0;
 
 
 static void genStmt(TreeNode * tree,char* return_label){
@@ -229,18 +258,70 @@ static void genStmt(TreeNode * tree,char* return_label){
 
 		case CompoundK:
 			if(TraceCode) emitComment("-> Compound Statement");
-			cGen(tree->child[1],NULL);
+			cGen(tree->child[1],return_label);
 			if(TraceCode) emitComment("<- Compound Statement");
 			break;
 
+		case ExpStmtK:
+			//if(TraceCode) emitComment("-> Expression Statement");
+			cGen(tree->child[0],return_label);
+			removeAllTempReg();
+			//if(TraceCode) emitComment("<- Expression Statement");
+			break;
+
 		case SelectK:
+			if(TraceCode) emitComment("-> Selection Statement");
+			if(tree->child[2] == NULL){// if then
+				getLabel(label1);
+
+				cGen(tree->child[0],NULL);
+				emitRO_2("beqz",TempRegName[currentTempReg()],label1,"branch if condition is false");
+				removeTempReg(1);
+
+				cGen(tree->child[1],return_label);
+				emitLabel(label1);
+			}else{//if then else
+				getLabel(label1);
+				getLabel(label2);
+
+				cGen(tree->child[0],NULL);
+				emitRO_2("beqz",TempRegName[currentTempReg()],label1,"branch if condition is false");
+				removeTempReg(1);
+
+				cGen(tree->child[1],return_label);
+				emitRO_1("b",label2,"branch to end of selection statement");
+				emitLabel(label1);
+				cGen(tree->child[2],return_label);
+				emitLabel(label2);
+			}
+			if(TraceCode) emitComment("<- Selection Statement");
 			break;
 
 		case IterK:
+			if(TraceCode) emitComment("-> Iteration Statement");
+			getLabel(label1);
+			getLabel(label2);
+
+			emitLabel(label1);
+			cGen(tree->child[0],NULL);
+			emitRO_2("beqz",TempRegName[currentTempReg()],label2,"branch if condition is false");
+			removeTempReg(1);
+
+			cGen(tree->child[1],return_label);
+			emitRO_1("b",label1,"branch to end of iteration statement");
+			emitLabel(label2);			
+			if(TraceCode) emitComment("<- Iteration Statement");
 			break;
 
 		case ReturnK:
+			if(TraceCode) emitComment("-> Return Statement");
+			
+			cGen(tree->child[0],NULL);
+			emitRO_2("move","$v0",TempRegName[currentTempReg()],"save function return value in v0");
+			removeTempReg(1);
+			emitRO_1("j",return_label,"jump to function end process");
 
+			if(TraceCode) emitComment("<- Return Statement");
 			break;
 
 		default:
@@ -251,7 +332,7 @@ static void genStmt(TreeNode * tree,char* return_label){
 static void genExp(TreeNode * tree,char* return_label){
 	int loc;
 	TreeNode * p1, *p2;
-	int tmpRegNum,tmpRegNum2,cur_tmp;
+	int tempRegNum,tempRegNum2,cur_temp;
 	char hex[14];
 	TreeNode* decNode;
 	int argument_size;
@@ -260,24 +341,28 @@ static void genExp(TreeNode * tree,char* return_label){
 
 	switch(tree->kind.exp){
 		case ConstK:
-			tmpRegNum = nextTempReg();
-			if(tmpRegNum == -1){
-				printf("ERROR: Full of Tmp Reg\n");
+			tempRegNum = nextTempReg();
+			if(tempRegNum == -1){
+				printf("ERROR: Full of Temp Reg\n");
 				exit(1);
 			}
 
-			emitRI_2("li",TmpRegName[tmpRegNum],tree->attr.val,"const: immediate value to tmpReg");
+			emitRI_2("li",TempRegName[tempRegNum],tree->attr.val,"const: immediate value to tempReg");
 			break;
 
 		case IdK:
-			loc = tree->typeDecNode->loc;
-			tmpRegNum = nextTempReg();
-			if(tmpRegNum == -1){
-				printf("ERROR: Full of Tmp Reg\n");
+			decNode = tree->typeDecNode;
+			loc = getLocation(decNode); 
+			tempRegNum = nextTempReg();
+			if(tempRegNum == -1){
+				printf("ERROR: Full of Temp Reg\n");
 				exit(1);
 			}
 
-			emitRM("lw",TmpRegName[tmpRegNum],loc,"$fp","id: variable value to tmpReg");
+			if(_is_global(decNode))
+				emitRM("lw",TempRegName[tempRegNum],loc,"$gp","id: variable value to tempReg");
+			else
+				emitRM("lw",TempRegName[tempRegNum],loc,"$fp","id: variable value to tempReg");
 
 			break;
 
@@ -289,45 +374,45 @@ static void genExp(TreeNode * tree,char* return_label){
 			cGen(p1,NULL); //결과가 tn에 있다면,
 			cGen(p2,NULL); //결과는 tn+1에 있다.
 
-			cur_tmp = currentTmpReg();
+			cur_temp = currentTempReg();
 			
 			switch(tree->attr.op){
 				case PLUS:
-					emitRO_3("add",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"add: add two operand");
+					emitRO_3("add",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"add: add two operand");
 					break;
 				case MINUS:
-					emitRO_3("sub",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"sub: subtract two operand");
+					emitRO_3("sub",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"sub: subtract two operand");
 					break;
 				case TIMES:
-					emitRO_3("mul",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"mul: multiply two operand");
+					emitRO_3("mul",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"mul: multiply two operand");
 					break;
 				case OVER:
-					emitRO_3("div",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"div: divide two operand");
+					emitRO_3("div",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"div: divide two operand");
 					break;
 
 				case EQ:
-					emitRO_3("seq",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"seq: set 1 if equal");
+					emitRO_3("seq",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"seq: set 1 if equal");
 					break;
 				case NEQ:
-					emitRO_3("sne",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"sne: set 1 if not equal");
+					emitRO_3("sne",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"sne: set 1 if not equal");
 					break;
 				case LT:
-					emitRO_3("slt",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"slt: set 1 if less than");
+					emitRO_3("slt",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"slt: set 1 if less than");
 					break;
 				case LTOE:
-					emitRO_3("sle",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"sle: set 1 if less or equal");
+					emitRO_3("sle",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"sle: set 1 if less or equal");
 					break;
 				case GT:
-					emitRO_3("sgt",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"sgt: set 1 if greater than");
+					emitRO_3("sgt",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"sgt: set 1 if greater than");
 					break;
 				case GTOE:
-					emitRO_3("sge",TmpRegName[cur_tmp-1],TmpRegName[cur_tmp-1],TmpRegName[cur_tmp],"sge: set 1 if grater or equal");
+					emitRO_3("sge",TempRegName[cur_temp-1],TempRegName[cur_temp-1],TempRegName[cur_temp],"sge: set 1 if grater or equal");
 					break;
 				default:
 					emitComment("BUG: Unknown operator");
 					break;
 			}
-			removeTmpReg(1);
+			removeTempReg(1);
 			if(TraceCode) emitComment("<- Op");
 			break;
 		
@@ -337,27 +422,34 @@ static void genExp(TreeNode * tree,char* return_label){
 			p1 = tree->child[0];
 			p2 = tree->child[1];
 
-			cGen(p2,NULL); //마지막 tmpReg에 p2의 결과가 저장되어 있음.
+			cGen(p2,NULL); //마지막 tempReg에 p2의 결과가 저장되어 있음.
 
 			if(_isId(p1)){	//Variable Accessing
 				decNode = p1->typeDecNode;
-				loc = decNode->loc;
-				emitRM("sw",TmpRegName[currentTmpReg()],loc,"$fp","store word: r-value to l-value");
+				loc = getLocation(decNode);
+				if(_is_global(decNode))
+					emitRM("sw",TempRegName[currentTempReg()],loc,"$gp","store word: r-value to l-value");
+				else
+					emitRM("sw",TempRegName[currentTempReg()],loc,"$fp","store word: r-value to l-value");
 			}else{	//Array Accessing
 				decNode = p1->child[0]->typeDecNode;
 				
 				cGen(p1->child[1],NULL);
 				
-				tmpRegNum = nextTempReg();
+				tempRegNum = nextTempReg();
 
-				emitRI_2("li",TmpRegName[tmpRegNum],WORDSIZE,"li: load word size");
-				emitRO_3("mul",TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum],"mul: value * wordsize");
-				emitRM_R("sw",TmpRegName[tmpRegNum-2],TmpRegName[tmpRegNum-1],"$fp","store word: r-value to l-value");
+				emitRI_2("li",TempRegName[tempRegNum],WORDSIZE,"li: load word size");
+				emitRO_3("mul",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum],"mul: value * wordsize");
+				if(_is_global(decNode))
+					emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],"$gp","add: calculate address of l-value");
+				else
+					emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],"$fp","add: calculate address of l-value");
+				emitRM_R("sw",TempRegName[tempRegNum-2],"",TempRegName[tempRegNum-1],"store word: r-value to l-value");
 				
-				removeTmpReg(1);
+				removeTempReg(1);
 			}
 			
-			removeTmpReg(1);
+			removeTempReg(1);
 			if(TraceCode) emitComment("<- Assign");
 			break;
 
@@ -371,26 +463,33 @@ static void genExp(TreeNode * tree,char* return_label){
 			cGen(p2,NULL);
 
 			if(decNode->kind.stmt == ParaArrDecK){
-				loc = decNode->loc;
+				loc = getLocation(decNode);
 
-				tmpRegNum = nextTempReg();
-				tmpRegNum2 = nextTempReg();	
+				tempRegNum = nextTempReg();
+				tempRegNum2 = nextTempReg();	
 
-				/* array[val]에서 val은 tmpRegNum-1에 있음 */
+				/* array[val]에서 val은 tempRegNum-1에 있음 */
 
-				emitRM("lw",TmpRegName[tmpRegNum],loc,"$fp","lw: load array base address");
-				emitRI_2("li",TmpRegName[tmpRegNum2],WORDSIZE,"li: load word size");
-				emitRO_3("mul",TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum2],"mul: value * wordsize");
-				emitRM_R("lw",TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum],"array accessing: array element to tmpReg");
-				removeTmpReg(2);
+				if(_is_global(decNode))
+					emitRM("lw",TempRegName[tempRegNum],loc,"$gp","lw: load array base address");
+				else
+					emitRM("lw",TempRegName[tempRegNum],loc,"$fp","lw: load array base address");
+				emitRI_2("li",TempRegName[tempRegNum2],WORDSIZE,"li: load word size");
+				emitRO_3("mul",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum2],"mul: value * wordsize");
+				emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum],"add: calculate address of element");
+				emitRM_R("lw",TempRegName[tempRegNum-1],"",TempRegName[tempRegNum],"array accessing: array element to tempReg");
+				removeTempReg(2);
 			}else{ //ArrDecK
-				tmpRegNum = nextTempReg();
+				tempRegNum = nextTempReg();
 
-				emitRI_2("li",TmpRegName[tmpRegNum],WORDSIZE,"li: load word size");
-				emitRO_3("mul",TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum],"mul: value * wordsize");
-				emitRM_R("lw",TmpRegName[tmpRegNum-1],TmpRegName[tmpRegNum-1],"$fp","array accessing: array element to tmpReg");
+				emitRI_2("li",TempRegName[tempRegNum],WORDSIZE,"li: load word size");
+				emitRO_3("mul",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum],"mul: value * wordsize");
+				if(_is_global(decNode))
+					emitRM_R("lw",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],"$gp","array accessing: array element to tempReg");
+				else
+					emitRM_R("lw",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],"$fp","array accessing: array element to tempReg");
 
-				removeTmpReg(1);
+				removeTempReg(1);
 			}
 			
 			if(TraceCode) emitComment("<- Array Accessing");
@@ -402,16 +501,16 @@ static void genExp(TreeNode * tree,char* return_label){
 			p1 = tree->child[0];
 			p2 = tree->child[1];
 
-			tmpRegNum = nextTempReg();
+			tempRegNum = nextTempReg();
 			
 			argument_size = argumentPush(p2);
-			saveTmpReg();
+			saveTempReg();
 			emitRO_1("jal",p1->attr.name,"jump to function body");
 
 			//Caller로 돌아왔을 때 후처리
-			retriveTmpReg();
+			retriveTempReg();
 			emitRI_3("addi","$sp","$sp",argument_size,"addi: remove space for argument");
-			emitRO_2("move",TmpRegName[tmpRegNum],"$v0","move: v0 to tempReg(function result save)");
+			emitRO_2("move",TempRegName[tempRegNum],"$v0","move: v0 to tempReg(function result save)");
 
 			if(TraceCode) emitComment("<- Call Function");
 			break;
@@ -436,6 +535,34 @@ static void cGen(TreeNode * tree,char* return_label){
 	}
 }
 
+static void makeDataArea(void){
+	GValueNode* ptr;
+
+	printf("In Here!\n");
+
+	if(gs_globalVariableList != NULL){
+		fprintf(code,"\t\t\t.data\n");
+		
+		ptr = gs_globalVariableList;
+
+		while(ptr){
+			TreeNode* node = ptr->node;
+			switch(node->kind.stmt){
+				case ArrDecK:
+					fprintf(code,".space	%d\n",WORDSIZE*node->child[2]->attr.val);
+					break;
+				case VarDecK:
+					fprintf(code,".space	%d\n",WORDSIZE);
+					break;
+				default:
+					emitComment("ERROR: there exist non declaration node in globalVariableList");
+			}
+
+			ptr = ptr->next;
+		}
+	}
+}
+
 void codeGen(TreeNode* syntaxTree,char* codefile){
 	char* s = malloc(strlen(codefile)+7);
 	strcpy(s,"File: ");
@@ -443,8 +570,9 @@ void codeGen(TreeNode* syntaxTree,char* codefile){
 	emitComment("C-- Compilation to SPIM Code");
 	emitComment(s);
 
+	makeDataArea();
 	emitComment("Standard prelude:");
-	fprintf(code,"	.text\n");
+	fprintf(code,"\t\t.text\n");
 	emitComment("End of standard prelude.");
 
 	cGen(syntaxTree,NULL);

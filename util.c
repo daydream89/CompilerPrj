@@ -173,6 +173,8 @@ void printTree( TreeNode * tree ){
 				case ReturnK:
 					fprintf(listing,"Return Statement\n");
 					break;
+				case ExpStmtK:
+					break;
 				default:
 					fprintf(listing,"Unknown StmtNode kind\n");
 					break;

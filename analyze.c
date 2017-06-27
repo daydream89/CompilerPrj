@@ -278,6 +278,7 @@ static void checkNode(TreeNode * t){
 							typeError(t,"function main can't have any parameter");
 					}
 				case CompoundK:
+				case ExpStmtK:
 					t->type = Void;
 					break;
 

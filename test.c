@@ -1,11 +1,17 @@
 /* Test C- Source Code (test.c) */
 /* Purpose: BubbleSort Test				 */
 
+int a;
+int b;
+int arr[100];
+
 int bubbleSort(int arr[],int size){
 	int i;
 	int j;
 	
 	i = 0;
+	a = 0;
+	b = 0;
 	
 	while(i < size){
 		int temp;
