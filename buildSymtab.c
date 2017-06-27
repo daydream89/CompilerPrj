@@ -3,13 +3,66 @@
 #include "buildSymtab.h"
 #include "cminus.tab.h"
 
-static int location = 0;
-static int global_location = 0;
+static int location = -4;
+static int param_location = 0;
+static int global_location = -4;
+static int function_location = -1;
 
 static int AfterDec = FALSE;
 static TreeNode* lastFuncDec = NULL;
 static TreeNode* lastDec = NULL;
 static int scope = 0;
+
+static int calculateLocation(StmtKind stmtKind, int array_size)
+{
+	int loc = 0;
+	if(stmtKind == VarDecK)
+	{
+		if(scope == 0)
+		{
+			global_location -= 4;
+			loc = global_location;
+		}
+		else
+		{
+			location -= 4;
+			loc = location;
+		}
+	}
+	else if(stmtKind == ArrDecK)
+	{
+		if(scope == 0)
+		{
+			global_location -= (4 * array_size);
+			loc = global_location;
+		}
+		else
+		{
+			location -= (4 * array_size);
+			loc = location;
+		}
+	}
+	else if(stmtKind == ParaDecK)
+	{
+		param_location += 4;
+		loc = param_location;
+	}
+	else if(stmtKind == ParaArrDecK)
+	{
+		if (array_size != 0)
+			param_location += (4 * array_size);
+		else
+			param_location += 4;
+		loc = param_location;
+	}
+	else if(stmtKind == FunDecK)
+	{
+		function_location++;
+		loc = function_location;
+	}
+
+	return loc;
+}
 
 static void nullProc(TreeNode *t)
 {
@@ -73,6 +126,8 @@ static void insertNode(TreeNode *t)
 				// {} 괄호 내부의 statement.
 				case CompoundK:
 				{
+					location = -4;
+					param_location = 0;
 				}break;
 
 				// return 문. 함수와 연결.
@@ -98,6 +153,7 @@ static void insertNode(TreeNode *t)
 
 					if(AfterDec == TRUE){
 						int array_size = 0;
+						int loc = 0;
 						ExpType return_type=Integer;
 
 						if(lastDec->kind.stmt == ArrDecK)
@@ -105,11 +161,19 @@ static void insertNode(TreeNode *t)
 
 						if(lastDec->kind.stmt == FunDecK && lastDec->child[0]->attr.op == VOID)
 							return_type = Void;
-						
+
+						// calculate location
+						loc = calculateLocation(lastDec->kind.stmt, array_size);
+						t->loc = loc;
+
 						if(scope == 0)
-							insertDeclaration(t->attr.name, t->lineno, global_location++,scope,lastDec->kind.stmt,array_size,return_type,lastDec);
+						{
+							insertDeclaration(t->attr.name, t->lineno, loc, scope, lastDec->kind.stmt, array_size, return_type, lastDec);
+						}
 						else
-							insertDeclaration(t->attr.name, t->lineno, location++,scope,lastDec->kind.stmt,array_size,return_type,lastDec);
+						{
+							insertDeclaration(t->attr.name, t->lineno, loc, scope, lastDec->kind.stmt, array_size, return_type, lastDec);
+						}
 						
 						lastDec = NULL;
 						AfterDec = FALSE;
