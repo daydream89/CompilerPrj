@@ -25,11 +25,11 @@ FILE * code;
 GValueNode *gs_globalVariableList;
 
 /* allocate and set racing flags */
-int EchoSource = TRUE;
-int TraceScan = TRUE;
-int TraceParse = TRUE;
-int TraceAnalyse = TRUE;
-int TraceCode = TRUE;
+int EchoSource = FALSE;
+int TraceScan = FALSE;
+int TraceParse = FALSE;
+int TraceAnalyse = FALSE;
+int TraceCode = FALSE;
 
 int Error = FALSE;	//프로그램 진행 중 error가 발생할 경우 true로 설정
 

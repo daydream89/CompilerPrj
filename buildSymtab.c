@@ -121,7 +121,6 @@ static void insertNode(TreeNode *t)
 					if(lastFuncDec != NULL)
 					{
 						lastFuncDec->local_val_size = local_location;
-						printf("local val size : %d", local_location);
 					}
 
 					local_location = -4;
@@ -296,6 +295,5 @@ void buildSymtab_pass1(TreeNode *syntaxTree)
 	if(lastFuncDec != NULL)
 	{
 		lastFuncDec->local_val_size = local_location;
-		printf("local val size : %d", local_location);
 	}
 }

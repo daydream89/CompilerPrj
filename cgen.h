@@ -1,6 +1,6 @@
 #ifndef _CGEN_H_
 #define _CGEN_H_
 
-eGen(TreeNode * syntaxTree, char* codefile);
+void codeGen(TreeNode * syntaxTree, char* codefile);
 
 #endif

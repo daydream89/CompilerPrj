@@ -141,12 +141,6 @@ static int argumentPush(TreeNode* tree){
 	return num*WORDSIZE;
 }
 
-static int _isConst(TreeNode* tree){
-	if(tree->nodekind == ExpK && tree->kind.exp == ConstK)
-		return 1;
-	else return 0;
-}
-
 static int _isId(TreeNode* tree){
 	if(tree->nodekind == ExpK && tree->kind.exp == IdK)
 		return 1;
@@ -159,22 +153,8 @@ static void getLabel(char* label){
 	sprintf(label,"_lab_%d",labelNum++);
 }
 
-static void returnLabel(int howMany){
-	labelNum -= howMany;
-	if(labelNum < 0){
-		printf("ERROR: label number < 0");
-		exit(1);
-	}
-}
-
-static int tempOffset = 0;
-
-
 static void genStmt(TreeNode * tree,char* return_label){
-	TreeNode * p1, *p2, *p3;
-	int savedLoc1, savedLoc2, currentLoc;
-	int loc;
-	char label1[10],label2[10],label3[10];
+	char label1[10],label2[10];
 
 	if(DEBUG) printf("genStmt\n");
 
@@ -192,7 +172,6 @@ static void genStmt(TreeNode * tree,char* return_label){
 
 			//Local 변수를 위한 공간 할당
 			emitRI_3("addi","$sp","$sp",tree->local_val_size,"addi: reserve space for local variable");
-			printf("%s: %d\n",tree->child[1]->attr.name,tree->local_val_size);
 
 			cGen(tree->child[3],label1);
 
@@ -282,7 +261,6 @@ static void genExp(TreeNode * tree,char* return_label){
 	int loc;
 	TreeNode * p1, *p2;
 	int tempRegNum,tempRegNum2,cur_temp;
-	char hex[14];
 	TreeNode* decNode;
 	int argument_size;
 
@@ -426,7 +404,7 @@ static void genExp(TreeNode * tree,char* return_label){
 				emitRI_2("li",TempRegName[tempRegNum2],WORDSIZE,"li: load word size");
 				emitRO_3("mul",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum2],"mul: value * wordsize");
 				emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum],"add: calculate address of element");
-				emitRM("lw",TempRegName[tempRegNum-1],"",TempRegName[tempRegNum],"array accessing: array element to tempReg");
+				emitRM("lw",TempRegName[tempRegNum-1],0,TempRegName[tempRegNum],"array accessing: array element to tempReg");
 				removeTempReg(2);
 			}else{ //ArrDecK
 				tempRegNum = nextTempReg();
@@ -519,8 +497,6 @@ static void cGen(TreeNode * tree,char* return_label){
 
 static void makeDataArea(void){
 	GValueNode* ptr;
-
-	printf("In Here!\n");
 
 	if(gs_globalVariableList != NULL){
 		
