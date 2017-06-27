@@ -1,7 +1,7 @@
 all : main
 
-main : cminus.tab.o lex.yy.o main.o util.o buildSymtab.o symtab.o analyze.o
-	gcc -o project3_6 cminus.tab.o lex.yy.o main.o util.o buildSymtab.o symtab.o analyze.o -ly -lfl
+main : cminus.tab.o lex.yy.o main.o util.o buildSymtab.o symtab.o analyze.o cgen.o code.o
+	gcc -o project4_6 cminus.tab.o lex.yy.o main.o util.o buildSymtab.o symtab.o analyze.o cgen.o code.o -ly -lfl
 
 cminus.tab.c cminus.tab.h cminus.output: cminus.y
 	bison -d -v cminus.y
@@ -27,6 +27,12 @@ lex.yy.o: cminus.tab.c cminus.tab.h lex.yy.c
 analyze.o: analyze.c analyze.h
 	gcc -c analyze.c -Wall
 
+code.h: code.c code.h
+	gcc -c code.c -Wall
+
+cgen.o: cgen.c cgen.h
+	gcc -c cgen.c -Wall
+
 clean : 
-	rm -f *.o lex.yy.c cminus.tab.c cminus.tab.h cminus.output project3_6
+	rm -f *.o lex.yy.c cminus.tab.c cminus.tab.h cminus.output project4_6
 

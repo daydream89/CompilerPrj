@@ -12,6 +12,7 @@
 #include "buildSymtab.h"
 #include "cminus.tab.h"
 #include "analyze.h"
+#include "cgen.h"
 
 /* parse.h inside */
 TreeNode* parse(void);
@@ -20,6 +21,7 @@ TreeNode* parse(void);
 int lineno = 0;
 FILE * source;	//C-Language Source File
 FILE * listing;	//Output Stream
+FILE * code;
 
 /* allocate and set racing flags */
 int EchoSource = TRUE;
