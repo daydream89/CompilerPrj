@@ -118,12 +118,18 @@ static void insertNode(TreeNode *t)
 				// TreeNode를 저장해두고 st_insert할 때 typeDecNode에 넣어준다.
 				case FunDecK:
 				{
-					AfterDec = TRUE;
-					lastFuncDec = t;
-					lastDec = t;
+					if(lastFuncDec != NULL)
+					{
+						lastFuncDec->local_val_size = local_location;
+						printf("local val size : %d", local_location);
+					}
 
 					local_location = -4;
 					param_location = 0;
+
+					AfterDec = TRUE;
+					lastFuncDec = t;
+					lastDec = t;
 				}break;
 
 				// {} 괄호 내부의 statement.
@@ -179,7 +185,6 @@ static void insertNode(TreeNode *t)
 							GValueNode *ptr = gs_globalVariableList;
 							if(ptr == NULL)
 							{
-								printf("first global\n");
 								gs_globalVariableList = gValueNode;
 							}
 							else
@@ -190,7 +195,6 @@ static void insertNode(TreeNode *t)
 								}
 
 								ptr->next = gValueNode;
-								printf("next global\n");
 							}
 						}
 						else
@@ -289,4 +293,9 @@ void buildSymtab_pass1(TreeNode *syntaxTree)
 	st_create();
 	traverse(syntaxTree, insertNode, nullProc);
 	printSymTab(listing);
+	if(lastFuncDec != NULL)
+	{
+		lastFuncDec->local_val_size = local_location;
+		printf("local val size : %d", local_location);
+	}
 }
