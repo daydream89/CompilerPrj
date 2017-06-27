@@ -170,16 +170,26 @@ static void insertNode(TreeNode *t)
 						// insert treeNode into gs_globalVariableList
 						if(scope == 0 && lastDec->kind.stmt == VarDecK)
 						{
+							lastDec->is_global = TRUE;
 							GValueNode *gValueNode = (GValueNode *)malloc(sizeof(gValueNode));
 							gValueNode->node = lastDec;
 							gValueNode->next = NULL;
 
 							GValueNode *ptr = gs_globalVariableList;
-							while(ptr->next != NULL)
-								ptr = ptr->next;
+							if(ptr == NULL)
+							{
+								gs_globalVariableList = gValueNode;
+							}
+							else
+							{
+								while(ptr->next != NULL)
+									ptr = ptr->next;
 
-							ptr->next = gValueNode;
+								ptr->next = gValueNode;
+							}
 						}
+						else
+							lastDec->is_global = FALSE;
 
 						if(scope == 0)
 						{
