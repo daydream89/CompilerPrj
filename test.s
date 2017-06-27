@@ -1,12 +1,13 @@
 # C-- Compilation to SPIM Code
 # File: test.s
+# Data Area Allocation.
 			.data
 .space	4
 .space	4
 .space	400
-# Standard prelude:
+output: .asciiz	"Output: "
+input: .asciiz	"Input: "
 		.text
-# End of standard prelude.
 # -> Function Declaration
 .globl bubbleSort
 bubbleSort:
@@ -28,6 +29,26 @@ bubbleSort:
 	   li		$t0,	0	# const: immediate value to tempReg
 	   sw		$t0,	-12($gp) 	# store word: r-value to l-value
 # <- Assign
+# -> Assign
+# -> Input
+	   li		$v0,	4	# load print_string call code
+	   la		$a0,	input	# load address of "Input:"
+	syscall			# call OS to perform operation
+	   li		$v0,	5	# load read_int call code
+	syscall			# call OS to perform operation
+	 move		$t0,	$v0	# value read from keyboard -> $v0 -> tempReg
+# <- Input
+	   sw		$t0,	-8($fp) 	# store word: r-value to l-value
+# <- Assign
+# -> Output
+	   li		$v0,	4	# load print_string call code
+	   la		$a0,	output	# load address of "Output:"
+	syscall			# call OS to perform operation
+	   lw		$t0,	-8($fp) 	# id: variable value to tempReg
+	   li		$v0,	1	# load print_int call code
+	 move		$a0,	$t0	# move integer to be printed into $a0
+	syscall			# call OS to perform operation
+# <- Output
 # -> Iteration Statement
 _lab_1:
 # -> Op

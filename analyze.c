@@ -223,6 +223,16 @@ static void checkNode(TreeNode * t){
 						t->type = Void;
 
 					break;
+				
+				case InputK:
+					t->type = Integer;
+					break;
+
+				case OutputK:
+					if(t->child[0]->type != Integer)
+						typeError(t,"Output value must be integer");
+					t->type = Void;
+					break;
 
 				case ArrK:
 					if(DEBUG) printf("ArrK\n");

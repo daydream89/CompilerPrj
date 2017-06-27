@@ -42,7 +42,9 @@ void printToken( TokenType token, const char* tokenString ){
 		case LBRACK: fprintf(listing,"[\t\t\t[\n");break;
 		case RBRACK: fprintf(listing,"]\t\t\t]\n");break;
 		case ENDFILE: fprintf(listing,"EOF\n"); break;
-		
+		case INPUT:	fprintf(listing,"INPUT\n"); break;
+		case OUTPUT:	fprintf(listing,"OUTPUT\n"); break;
+
 		/*Number*/
 		case NUM:
 			fprintf(listing,"NUM\t\t\t%s\n",tokenString);
@@ -204,6 +206,12 @@ void printTree( TreeNode * tree ){
 					break;
 				case CallK:
 					fprintf(listing,"Function Call\n");
+					break;
+				case InputK:
+					fprintf(listing,"Input\n");
+					break;
+				case OutputK:
+					fprintf(listing,"Output\n");
 					break;
 				default:
 					fprintf(listing,"Unknown ExpNode kind\n");

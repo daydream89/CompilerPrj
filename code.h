@@ -23,7 +23,6 @@ void emitRI_3(char *op, char* r, char* s, int t, char *c);
 void emitRI_2(char *op, char* r, int s,char *c);
 
 void emitRM(char* op, char* r, int d, char* s, char *c);
-void emitRM_R(char* op, char* r, char* d, char* s, char *c);
 
 int emitSkip(int howMany);
 

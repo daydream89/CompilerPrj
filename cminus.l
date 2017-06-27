@@ -19,6 +19,8 @@ whitespace	[ \t]+
 
 %%
 
+"output"	{return OUTPUT;}
+"input"		{return INPUT;}
 "else"		{return ELSE;}
 "if"		{return IF;}
 "int"		{return INT;}

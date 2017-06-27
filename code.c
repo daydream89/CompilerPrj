@@ -60,13 +60,6 @@ void emitRM(char *op,char* r,int d,char* s,char* c){
 	if(highEmitLoc < emitLoc) highEmitLoc = emitLoc;
 }
 
-void emitRM_R(char *op,char* r,char* d,char* s,char* c){
-	fprintf(code,"\t%5s		%s,\t%s(%s) ",op,r,d,s);
-	if(TraceCode) fprintf(code,"\t# %s",c);
-	fprintf(code,"\n");
-	if(highEmitLoc < emitLoc) highEmitLoc = emitLoc;
-}
-
 int emitSkip(int howMany){
 	int i = emitLoc;
 	emitLoc += howMany;

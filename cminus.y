@@ -19,7 +19,7 @@ int yyerror(char*);
 
 %token IF ELSE WHILE
 %token ID NUM
-%token ASSIGN EQ NEQ LT LTOE GT GTOE PLUS MINUS TIMES OVER LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMI COMMA INT RETURN VOID ENDFILE
+%token INPUT OUTPUT ASSIGN EQ NEQ LT LTOE GT GTOE PLUS MINUS TIMES OVER LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK SEMI COMMA INT RETURN VOID ENDFILE
 %token ERROR
 
 %right ASSIGN
@@ -292,7 +292,14 @@ call              : dec_var LPAREN args RPAREN
                         $$->child[0] = $1;
 												$$->child[1] = $3;
                       }
-                  ;
+                  |	INPUT LPAREN RPAREN
+											{	$$ = newExpNode(InputK);
+											}
+									|	OUTPUT LPAREN expression RPAREN
+											{	$$ = newExpNode(OutputK);
+												$$->child[0] = $3;
+											}
+									;
 args              : arg_list
                       { $$ = $1; }
                   |

@@ -12,6 +12,9 @@ int bubbleSort(int arr[],int size){
 	i = 0;
 	a = 0;
 	b = 0;
+
+	i = input();
+	output(i);
 	
 	while(i < size){
 		int temp;
