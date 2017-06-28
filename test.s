@@ -1,12 +1,13 @@
 # C-- Compilation to SPIM Code
 # File: test.s
-# Data Area Allocation.
 			.data
+# Data Area Allocation.
 .space	4
 .space	4
 .space	400
 output: .asciiz	"Output: "
 input: .asciiz	"Input: "
+new_line: .asciiz "\n"
 		.text
 # -> Function Declaration
 .globl bubbleSort
@@ -15,7 +16,7 @@ bubbleSort:
 	   sw		$fp,	4($sp) 	# save fp
 	   sw		$ra,	0($sp) 	# save ra
 	 addi		$fp,	$sp,	4	# addi : setting fp
-	 addi		$sp,	$sp,	36	# addi: reserve space for local variable
+	 addi		$sp,	$sp,	-32	# addi: reserve space for local variable
 # -> Compound Statement
 # -> Assign
 	   li		$t0,	0	# const: immediate value to tempReg
@@ -23,11 +24,11 @@ bubbleSort:
 # <- Assign
 # -> Assign
 	   li		$t0,	0	# const: immediate value to tempReg
-	   sw		$t0,	-8($gp) 	# store word: r-value to l-value
+	   sw		$t0,	-4($gp) 	# store word: r-value to l-value
 # <- Assign
 # -> Assign
 	   li		$t0,	0	# const: immediate value to tempReg
-	   sw		$t0,	-12($gp) 	# store word: r-value to l-value
+	   sw		$t0,	-8($gp) 	# store word: r-value to l-value
 # <- Assign
 # -> Assign
 # -> Input
@@ -47,6 +48,9 @@ bubbleSort:
 	   lw		$t0,	-8($fp) 	# id: variable value to tempReg
 	   li		$v0,	1	# load print_int call code
 	 move		$a0,	$t0	# move integer to be printed into $a0
+	syscall			# call OS to perform operation
+	   li		$v0,	4	# load print_string call code
+	   la		$a0,	new_line	# load address of "\n"
 	syscall			# call OS to perform operation
 # <- Output
 # -> Iteration Statement
@@ -83,7 +87,7 @@ _lab_3:
 	   li		$t2,	4	# li: load word size
 	  mul		$t0,	$t0,	$t2	# mul: value * wordsize
 	  add		$t0,	$t0,	$t1	# add: calculate address of element
-	   lw		$t0,	($t1) 	# array accessing: array element to tempReg
+	   lw		$t0,	0($t0) 	# array accessing: array element to tempReg
 # <- Array Accessing
 # -> Array Accessing
 	   lw		$t1,	-12($fp) 	# id: variable value to tempReg
@@ -91,7 +95,7 @@ _lab_3:
 	   li		$t3,	4	# li: load word size
 	  mul		$t1,	$t1,	$t3	# mul: value * wordsize
 	  add		$t1,	$t1,	$t2	# add: calculate address of element
-	   lw		$t1,	($t2) 	# array accessing: array element to tempReg
+	   lw		$t1,	0($t1) 	# array accessing: array element to tempReg
 # <- Array Accessing
 	  sgt		$t0,	$t0,	$t1	# sgt: set 1 if greater than
 # <- Op
@@ -104,7 +108,7 @@ _lab_3:
 	   li		$t2,	4	# li: load word size
 	  mul		$t0,	$t0,	$t2	# mul: value * wordsize
 	  add		$t0,	$t0,	$t1	# add: calculate address of element
-	   lw		$t0,	($t1) 	# array accessing: array element to tempReg
+	   lw		$t0,	0($t0) 	# array accessing: array element to tempReg
 # <- Array Accessing
 	   sw		$t0,	-24($fp) 	# store word: r-value to l-value
 # <- Assign
@@ -115,13 +119,13 @@ _lab_3:
 	   li		$t2,	4	# li: load word size
 	  mul		$t0,	$t0,	$t2	# mul: value * wordsize
 	  add		$t0,	$t0,	$t1	# add: calculate address of element
-	   lw		$t0,	($t1) 	# array accessing: array element to tempReg
+	   lw		$t0,	0($t0) 	# array accessing: array element to tempReg
 # <- Array Accessing
 	   lw		$t1,	-8($fp) 	# id: variable value to tempReg
 	   li		$t2,	4	# li: load word size
 	  mul		$t1,	$t1,	$t2	# mul: value * wordsize
 	  add		$t1,	$t1,	$fp	# add: calculate address of l-value
-	   sw		$t0,	($t1) 	# store word: r-value to l-value
+	   sw		$t0,	0($t1) 	# store word: r-value to l-value
 # <- Assign
 # -> Assign
 	   lw		$t0,	-24($fp) 	# id: variable value to tempReg
@@ -129,7 +133,7 @@ _lab_3:
 	   li		$t2,	4	# li: load word size
 	  mul		$t1,	$t1,	$t2	# mul: value * wordsize
 	  add		$t1,	$t1,	$fp	# add: calculate address of l-value
-	   sw		$t0,	($t1) 	# store word: r-value to l-value
+	   sw		$t0,	0($t1) 	# store word: r-value to l-value
 # <- Assign
 # <- Compound Statement
 _lab_5:
@@ -243,7 +247,7 @@ _lab_7:
 # <- Selection Statement
 # <- Compound Statement
 _lab_0:
-	 addi		$sp,	$sp,	-36	# addi: remove space for local variable
+	 addi		$sp,	$sp,	32	# addi: remove space for local variable
 	   lw		$ra,	0($sp) 	# retrive ra
 	   lw		$fp,	4($sp) 	# retrive fp
 	 addi		$sp,	$sp,	8	# add: remove space for fp,ra
@@ -256,16 +260,16 @@ main:
 	   sw		$fp,	4($sp) 	# save fp
 	   sw		$ra,	0($sp) 	# save ra
 	 addi		$fp,	$sp,	4	# addi : setting fp
-	 addi		$sp,	$sp,	408	# addi: reserve space for local variable
+	 addi		$sp,	$sp,	-404	# addi: reserve space for local variable
 # -> Compound Statement
 # -> Assign
 # -> Call Function
-	   lw		$t1,	-404($fp) 	# id: variable value to tempReg
+	 addi		$t1,	$fp,	-404	# id: variable value to tempReg
 	   li		$t2,	100	# const: immediate value to tempReg
-	 addi		$sp,	$sp,	-8	# add: retrive space for pushing argument
+	 addi		$sp,	$sp,	-8	# add: reserve space for pushing argument
 	   sw		$t1,	0($sp) 	# push argument
 	   sw		$t2,	4($sp) 	# push argument
-	 addi		$sp,	$sp,	40	# add: reserve space for save temp register
+	 addi		$sp,	$sp,	-40	# add: reserve space for save temp register
 	   sw		$t0,	36($sp) 	# save temp register
 	   sw		$t1,	32($sp) 	# save temp register
 	   sw		$t2,	28($sp) 	# save temp register
@@ -287,7 +291,7 @@ main:
 	   lw		$t7,	8($sp) 	# retrive temp register
 	   lw		$t8,	4($sp) 	# retrive temp register
 	   lw		$t9,	0($sp) 	# retrive temp register
-	 addi		$sp,	$sp,	40	# add: retrive space for saved temp register
+	 addi		$sp,	$sp,	40	# add: remove space for saved temp register
 	 addi		$sp,	$sp,	8	# addi: remove space for argument
 	 move		$t0,	$v0	# move: v0 to tempReg(function result save)
 # <- Call Function
@@ -295,7 +299,7 @@ main:
 # <- Assign
 # <- Compound Statement
 _lab_12:
-	 addi		$sp,	$sp,	-408	# addi: remove space for local variable
+	 addi		$sp,	$sp,	404	# addi: remove space for local variable
 	   lw		$ra,	0($sp) 	# retrive ra
 	   lw		$fp,	4($sp) 	# retrive fp
 	 addi		$sp,	$sp,	8	# add: remove space for fp,ra

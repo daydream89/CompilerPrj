@@ -10,7 +10,7 @@ fibonacci:
 	   sw		$fp,	4($sp) 
 	   sw		$ra,	0($sp) 
 	 addi		$fp,	$sp,	4
-	 addi		$sp,	$sp,	-1656
+	 addi		$sp,	$sp,	-1652
 	   lw		$t0,	44($fp) 
 	   li		$t1,	0
 	  sle		$t0,	$t0,	$t1
@@ -35,16 +35,19 @@ _lab_2:
 	   li		$t1,	5
 	   li		$t2,	4
 	  mul		$t1,	$t1,	$t2
+	 addi		$t1,	$t1,	-48
 	  add		$t1,	$t1,	$fp
 	   sw		$t0,	0($t1) 
 	   lw		$t0,	-8($fp) 
 	   li		$t1,	4
 	  mul		$t0,	$t0,	$t1
+	 addi		$t0,	$t0,	-4004
 	  add		$t0,	$t0,	$gp
 	   lw		$t0,	0($t0) 
 	   li		$t1,	5
 	   li		$t2,	4
 	  mul		$t1,	$t1,	$t2
+	 addi		$t1,	$t1,	-48
 	  add		$t1,	$t1,	$fp
 	   lw		$t1,	0($t1) 
 	  sne		$t0,	$t0,	$t1
@@ -52,6 +55,7 @@ _lab_2:
 	   lw		$t0,	-8($fp) 
 	   li		$t1,	4
 	  mul		$t0,	$t0,	$t1
+	 addi		$t0,	$t0,	-4004
 	  add		$t0,	$t0,	$gp
 	   lw		$t0,	0($t0) 
 	 move		$v0,	$t0
@@ -125,27 +129,31 @@ _lab_4:
 	   lw		$t1,	44($fp) 
 	   li		$t2,	4
 	  mul		$t1,	$t1,	$t2
+	 addi		$t1,	$t1,	-4004
 	  add		$t1,	$t1,	$gp
 	   sw		$t0,	0($t1) 
 	   lw		$t0,	44($fp) 
 	   li		$t1,	4
 	  mul		$t0,	$t0,	$t1
+	 addi		$t0,	$t0,	-4004
 	  add		$t0,	$t0,	$gp
 	   lw		$t0,	0($t0) 
 	   li		$t1,	333
 	   li		$t2,	4
 	  mul		$t1,	$t1,	$t2
+	 addi		$t1,	$t1,	-1656
 	  add		$t1,	$t1,	$fp
 	   sw		$t0,	0($t1) 
 	   li		$t0,	333
 	   li		$t1,	4
 	  mul		$t0,	$t0,	$t1
+	 addi		$t0,	$t0,	-1656
 	  add		$t0,	$t0,	$fp
 	   lw		$t0,	0($t0) 
 	 move		$v0,	$t0
 	    j		_lab_0
 _lab_0:
-	 addi		$sp,	$sp,	1656
+	 addi		$sp,	$sp,	1652
 	   lw		$ra,	0($sp) 
 	   lw		$fp,	4($sp) 
 	 addi		$sp,	$sp,	8
@@ -156,7 +164,7 @@ main:
 	   sw		$fp,	4($sp) 
 	   sw		$ra,	0($sp) 
 	 addi		$fp,	$sp,	4
-	 addi		$sp,	$sp,	-8
+	 addi		$sp,	$sp,	-4
 	   li		$v0,	4
 	   la		$a0,	input
 	syscall		
@@ -212,7 +220,7 @@ main:
 	   la		$a0,	new_line
 	syscall		
 _lab_5:
-	 addi		$sp,	$sp,	8
+	 addi		$sp,	$sp,	4
 	   lw		$ra,	0($sp) 
 	   lw		$fp,	4($sp) 
 	 addi		$sp,	$sp,	8

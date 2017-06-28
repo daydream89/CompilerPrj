@@ -21,25 +21,33 @@ static void cGen(TreeNode * tree,char* return_label);
 // 1. 숫자 출력 hex와 dec 혼동되어 있으니 dec가 가능하면 dec로 통일할 것
 // 2. Array Accessing은 indirect로 변경(parameter declrae인 경우에만)
 // 3. Argument의 Location 값은 일괄적으로 44씩 더하자(teempReg를 위한 40byte, 저장된 fp를 위한 4byte)
+static int _is_global(TreeNode* node){
+	return node->is_global;
+}
+
 static int getLocation(TreeNode* dec_node){
+	int result_location;
+
 	switch(dec_node->kind.stmt){
 		case ParaDecK:
 		case ParaArrDecK:
-			return dec_node->child[1]->loc + 40;
+			result_location = dec_node->child[1]->loc + 40;
 			break;
 		case ArrDecK:
 		case VarDecK:
-			return dec_node->child[1]->loc;
+			result_location = dec_node->child[1]->loc;
 			break;
 		default:
 			printf("ERROR: decNode is not declaration\n");
 			exit(1);
 			break;
 	}
-}
 
-static int _is_global(TreeNode* node){
-	return node->is_global;
+	if(_is_global(dec_node)){
+		result_location += 4;
+	}
+
+	return result_location;
 }
 
 static int tempReg = 0; //사용되지 않은 tempReg 중 가장 작은 idx
@@ -171,13 +179,13 @@ static void genStmt(TreeNode * tree,char* return_label){
 			emitRI_3("addi","$fp","$sp",WORDSIZE,"addi : setting fp");
 
 			//Local 변수를 위한 공간 할당
-			emitRI_3("addi","$sp","$sp",tree->local_val_size,"addi: reserve space for local variable");
+			emitRI_3("addi","$sp","$sp",(tree->local_val_size)+4,"addi: reserve space for local variable");
 
 			cGen(tree->child[3],label1);
 
 			emitLabel(label1);
 			
-			emitRI_3("addi","$sp","$sp",-(tree->local_val_size),"addi: remove space for local variable");
+			emitRI_3("addi","$sp","$sp",-((tree->local_val_size)+4),"addi: remove space for local variable");
 			retrive_FP_RA();
 			emitRO_1("jr","$ra","return to caller");
 
@@ -286,10 +294,24 @@ static void genExp(TreeNode * tree,char* return_label){
 				exit(1);
 			}
 
-			if(_is_global(decNode))
-				emitRM("lw",TempRegName[tempRegNum],loc,"$gp","id: variable value to tempReg");
-			else
-				emitRM("lw",TempRegName[tempRegNum],loc,"$fp","id: variable value to tempReg");
+			switch(decNode -> kind.stmt){
+				case ParaDecK:
+				case VarDecK:
+				if(_is_global(decNode))
+					emitRM("lw",TempRegName[tempRegNum],loc,"$gp","id: variable value to tempReg");
+				else
+					emitRM("lw",TempRegName[tempRegNum],loc,"$fp","id: variable value to tempReg");
+					break;
+				case ParaArrDecK:
+				case ArrDecK:
+				if(_is_global(decNode))
+					emitRI_3("addi",TempRegName[tempRegNum],"$gp",loc,"id: variable value to tempReg");
+				else
+					emitRI_3("addi",TempRegName[tempRegNum],"$fp",loc,"id: variable value to tempReg");
+					break;
+				default:
+					break;
+			}
 
 			break;
 
@@ -364,15 +386,27 @@ static void genExp(TreeNode * tree,char* return_label){
 				cGen(p1->child[1],NULL);
 				
 				tempRegNum = nextTempReg();
-
+				loc = getLocation(decNode);
+				
+				if(decNode -> kind.stmt == ArrDecK){
 				emitRI_2("li",TempRegName[tempRegNum],WORDSIZE,"li: load word size");
 				emitRO_3("mul",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum],"mul: value * wordsize");
+				emitRI_3("addi",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],loc,"addi: add location");
 				if(_is_global(decNode))
 					emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],"$gp","add: calculate address of l-value");
 				else
 					emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],"$fp","add: calculate address of l-value");
 				emitRM("sw",TempRegName[tempRegNum-2],0,TempRegName[tempRegNum-1],"store word: r-value to l-value");
-				
+				}else{ // ParaArrDecK
+					emitRM("lw",TempRegName[tempRegNum],loc,"$fp","lw: load array base address from parameter");
+					tempRegNum2 = nextTempReg();
+					emitRI_2("li",TempRegName[tempRegNum2],WORDSIZE,"li: load word size");
+					emitRO_3("mul",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum2],"mul: value * wordsize");
+					emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum],"add: calculate address of l-value");
+					emitRM("sw",TempRegName[tempRegNum-2],0,TempRegName[tempRegNum-1],"store word: r-value to l-value");
+					removeTempReg(1);
+				}
+
 				removeTempReg(1);
 			}
 			
@@ -404,13 +438,15 @@ static void genExp(TreeNode * tree,char* return_label){
 				emitRI_2("li",TempRegName[tempRegNum2],WORDSIZE,"li: load word size");
 				emitRO_3("mul",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum2],"mul: value * wordsize");
 				emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum],"add: calculate address of element");
-				emitRM("lw",TempRegName[tempRegNum-1],0,TempRegName[tempRegNum],"array accessing: array element to tempReg");
+				emitRM("lw",TempRegName[tempRegNum-1],0,TempRegName[tempRegNum-1],"array accessing: array element to tempReg");
 				removeTempReg(2);
 			}else{ //ArrDecK
 				tempRegNum = nextTempReg();
+				loc = getLocation(decNode);
 
 				emitRI_2("li",TempRegName[tempRegNum],WORDSIZE,"li: load word size");
 				emitRO_3("mul",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],TempRegName[tempRegNum],"mul: value * wordsize");
+				emitRI_3("addi",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],loc,"addi: add location");
 				if(_is_global(decNode))
 					emitRO_3("add",TempRegName[tempRegNum-1],TempRegName[tempRegNum-1],"$gp","calculate array element address");
 				else

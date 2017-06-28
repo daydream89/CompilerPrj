@@ -60,30 +60,6 @@ void emitRM(char *op,char* r,int d,char* s,char* c){
 	if(highEmitLoc < emitLoc) highEmitLoc = emitLoc;
 }
 
-int emitSkip(int howMany){
-	int i = emitLoc;
-	emitLoc += howMany;
-	if(highEmitLoc < emitLoc) highEmitLoc = emitLoc;
-	return i;
-}
-
-void emitBackup(int loc){
-	if(loc > highEmitLoc) emitComment("BUG in emitBackup");
-	emitLoc = loc;
-}
-
-void emitRestore(void){
-	emitLoc = highEmitLoc;
-}
-
-void emitRM_Abs(char* op, int r, int a, char * c){
-	fprintf(code,"\t%5s		%d,%d(%d) ",op,r,a-(emitLoc+1),pc);
-	++emitLoc;
-	if(TraceCode)fprintf(code, "\t# %s",c);
-	fprintf(code,"\n");
-	if(highEmitLoc < emitLoc) highEmitLoc = emitLoc;
-}
-
 void emitLabel(char* label){
 	fprintf(code,"%s:\n",label);
 }
